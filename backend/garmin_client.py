@@ -93,7 +93,11 @@ def logout():
 
 def _save_tokens(g: Garmin):
     Path(TOKEN_DIR).mkdir(parents=True, exist_ok=True)
-    g.garth.dump(TOKEN_DIR)
+    # garminconnect >= 0.3 guarda la sesión en g.client; versiones viejas en g.garth
+    if hasattr(g, "client") and hasattr(g.client, "dump"):
+        g.client.dump(TOKEN_DIR)
+    else:
+        g.garth.dump(TOKEN_DIR)
     logger.info("Tokens de Garmin guardados en %s", TOKEN_DIR)
 
 
