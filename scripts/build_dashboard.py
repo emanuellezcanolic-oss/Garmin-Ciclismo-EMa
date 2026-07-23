@@ -308,10 +308,10 @@ def make_plan(tsb, acwr, acute, chronic, hrv_today, hrv30, sleep_secs,
             "title": "Recopilando tus datos…",
             "steps": [{
                 "phase": "Todavía no hay recomendación",
-                "desc": "No hay suficiente historial de salidas para calcular tu carga crónica. "
-                        "Importá tus datos viejos desde intervals.icu (Ajustes → Conexiones → "
-                        "tarjeta Garmin → 'Importar todos los datos de Garmin') y esperá unos minutos. "
-                        "Con ~4 semanas de historial el plan se activa solo.",
+                "desc": "Tus salidas todavía no llegaron desde Garmin a intervals.icu. "
+                        "La importación ya está en curso y Garmin las manda de a poco (puede "
+                        "tardar horas) — no hace falta hacer nada, solo esperar. En cuanto "
+                        "haya historial de salidas, el plan diario se activa solo.",
             }],
             "est_load": 0,
             "why": ["Sin carga crónica (promedio de las últimas 4 semanas) no se puede dosificar "
