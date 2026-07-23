@@ -1,0 +1,106 @@
+* { box-sizing: border-box; }
+
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  margin: 0;
+  background: #f4f5f7;
+  color: #1c1e21;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 24px;
+  background: #16324f;
+  color: #fff;
+}
+
+header h1 { font-size: 1.2rem; margin: 0; }
+
+.badge {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 999px;
+  padding: 4px 14px;
+  font-size: 0.85rem;
+}
+
+.badge.ok { background: #2e7d32; }
+.badge.off { background: #b23b3b; }
+
+main { max-width: 1000px; margin: 24px auto; padding: 0 16px; }
+
+.card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 18px 20px;
+  margin-bottom: 18px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.card h2 { margin: 0 0 10px; font-size: 1.05rem; }
+
+.hint { color: #5a6572; font-size: 0.85rem; }
+
+.error { color: #b23b3b; font-size: 0.9rem; }
+
+.hidden { display: none !important; }
+
+label { display: block; margin: 10px 0; font-size: 0.9rem; }
+
+input, select {
+  display: block;
+  margin-top: 4px;
+  padding: 8px 10px;
+  border: 1px solid #c8ced6;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  width: 100%;
+  max-width: 320px;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: flex-end;
+}
+
+.row label { margin: 0; }
+.row input, .row select { width: 150px; }
+
+button {
+  background: #16324f;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 9px 18px;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+button:hover { background: #1f4468; }
+button:disabled { background: #8b97a3; cursor: wait; }
+
+button.secondary {
+  background: transparent;
+  color: #b23b3b;
+  border: 1px solid #b23b3b;
+  margin-top: 14px;
+  font-size: 0.85rem;
+}
+
+.table-wrap { overflow-x: auto; }
+
+table { border-collapse: collapse; width: 100%; font-size: 0.85rem; }
+
+th, td {
+  text-align: left;
+  padding: 6px 10px;
+  border-bottom: 1px solid #e4e7eb;
+  white-space: nowrap;
+}
+
+th { color: #5a6572; font-weight: 600; }
+
+tbody tr:hover { background: #f0f4f8; }

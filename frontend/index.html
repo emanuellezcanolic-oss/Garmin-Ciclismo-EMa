@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Entrenador de Ciclismo</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header>
+    <h1>🚵 Entrenador de Ciclismo</h1>
+    <div id="status-badge" class="badge">cargando…</div>
+  </header>
+
+  <main>
+    <!-- Login -->
+    <section id="login-card" class="card hidden">
+      <h2>Conectar con Garmin</h2>
+      <p class="hint">Tus credenciales van directo a Garmin y la sesión queda guardada localmente. No se pide login cada vez.</p>
+      <form id="login-form">
+        <label>Email de Garmin <input type="email" id="login-email" required></label>
+        <label>Contraseña <input type="password" id="login-password" required></label>
+        <button type="submit">Iniciar sesión</button>
+      </form>
+      <form id="mfa-form" class="hidden">
+        <p>Garmin te envió un código de verificación (revisá tu email).</p>
+        <label>Código MFA <input type="text" id="mfa-code" inputmode="numeric" required></label>
+        <button type="submit">Verificar</button>
+      </form>
+      <p id="login-error" class="error hidden"></p>
+    </section>
+
+    <!-- Panel principal -->
+    <section id="dashboard" class="hidden">
+      <div class="card">
+        <h2>Sincronización</h2>
+        <p id="sync-info" class="hint"></p>
+        <div class="row">
+          <label>Días de actividades <input type="number" id="sync-days-act" value="90" min="1" max="1095"></label>
+          <label>Días de métricas diarias <input type="number" id="sync-days-daily" value="30" min="1" max="365"></label>
+          <button id="sync-btn">Sincronizar ahora</button>
+        </div>
+        <p id="sync-result" class="hint"></p>
+        <button id="logout-btn" class="secondary">Cerrar sesión de Garmin</button>
+      </div>
+
+      <div class="card">
+        <h2>Mis datos (necesarios para las zonas y el plan)</h2>
+        <p class="hint">Completá estos valores — no los inventamos. Si no tenés potenciómetro, el TSS se estima por frecuencia cardíaca (TRIMP).</p>
+        <form id="settings-form" class="row">
+          <label>FC máxima <input type="number" id="set-hr-max" min="100" max="230" placeholder="ej. 185"></label>
+          <label>FC en reposo <input type="number" id="set-hr-rest" min="30" max="100" placeholder="ej. 52"></label>
+          <label>¿Potenciómetro?
+            <select id="set-power">
+              <option value="">sin definir</option>
+              <option value="1">Sí</option>
+              <option value="0">No</option>
+            </select>
+          </label>
+          <label>FTP (si tenés potencia) <input type="number" id="set-ftp" min="50" max="500" placeholder="ej. 220"></label>
+          <button type="submit">Guardar</button>
+        </form>
+        <p id="settings-saved" class="hint"></p>
+      </div>
+
+      <div class="card">
+        <h2>Métricas diarias (últimos 14 días)</h2>
+        <div class="table-wrap">
+          <table id="daily-table">
+            <thead><tr>
+              <th>Fecha</th><th>FC reposo</th><th>HRV noche</th><th>HRV estado</th>
+              <th>Sueño</th><th>Score sueño</th><th>Readiness</th><th>Body Battery</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Salidas en bici sincronizadas</h2>
+        <div class="table-wrap">
+          <table id="activities-table">
+            <thead><tr>
+              <th>Fecha</th><th>Nombre</th><th>Tipo</th><th>Dist.</th><th>Tiempo</th>
+              <th>Desnivel</th><th>FC prom</th><th>FC máx</th><th>Potencia</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
