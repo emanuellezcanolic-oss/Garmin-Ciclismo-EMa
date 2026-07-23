@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Entrenador de Ciclismo — Emanuel</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>🚵 Entrenador de Ciclismo</h1>
+    <div id="updated" class="badge">cargando…</div>
+  </header>
+
+  <main>
+    <section class="card" id="plan-card">
+      <h2 id="plan-title">Plan de hoy</h2>
+      <div id="plan-steps"></div>
+      <details>
+        <summary>¿Por qué este entreno? (justificación con tus datos)</summary>
+        <ul id="plan-why"></ul>
+      </details>
+    </section>
+
+    <section class="card">
+      <h2>Carga de entrenamiento</h2>
+      <div id="alerts"></div>
+      <div class="tiles" id="load-tiles"></div>
+      <div class="viz-root">
+        <div class="chart-head">
+          <div class="legend">
+            <span class="legend-item"><span class="dot dot-ctl"></span>Fitness (CTL)</span>
+            <span class="legend-item"><span class="dot dot-atl"></span>Fatiga (ATL)</span>
+            <span class="legend-item"><span class="dot dot-tsb"></span>Forma (TSB)</span>
+          </div>
+          <button type="button" id="toggle-load-table" class="linklike">Ver tabla</button>
+        </div>
+        <div id="load-chart"></div>
+        <div class="table-wrap hidden" id="load-table-wrap">
+          <table>
+            <thead><tr><th>Fecha</th><th>Carga día</th><th>CTL</th><th>ATL</th><th>TSB</th></tr></thead>
+            <tbody id="load-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="tiles" id="trend-tiles"></div>
+    </section>
+
+    <section class="card">
+      <h2>Últimas salidas</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>Fecha</th><th>Nombre</th><th>Tipo</th><th>Dist.</th><th>Tiempo</th>
+            <th>Desnivel</th><th>FC prom</th><th>Carga</th>
+          </tr></thead>
+          <tbody id="rides-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <p class="hint" id="footer-note"></p>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
