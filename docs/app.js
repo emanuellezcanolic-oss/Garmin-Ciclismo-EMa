@@ -41,6 +41,15 @@ async function init() {
     .join("");
   $("plan-why").innerHTML = (p.why || []).map((w) => `<li>${w}</li>`).join("");
 
+  let extra = "";
+  if (p.push && p.push.status === "ok") {
+    extra += `<div class="step">⌚ <strong>Enviado a tu Garmin</strong>: este entreno ya está en tu calendario de Garmin Connect (vía intervals.icu).</div>`;
+  }
+  if (p.route) {
+    extra += `<div class="step">🗺️ <strong>Ruta sugerida:</strong> ${p.route.name} — ${p.route.distance_km} km, ${p.route.elevation_m} m de desnivel (${p.route.reason}). ${p.route.challenge}</div>`;
+  }
+  $("plan-extra").innerHTML = extra;
+
   // ---- alertas
   $("alerts").innerHTML = (data.alerts || [])
     .map((a) => `<div class="alert alert-${a.level}">

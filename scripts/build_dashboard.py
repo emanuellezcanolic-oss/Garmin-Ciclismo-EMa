@@ -33,6 +33,100 @@ def get(path, **params):
     return r.json()
 
 
+WORKOUT_PREFIX = "🤖 Plan del día"
+
+
+def upsert_workout(plan):
+    """Crea/actualiza el entreno de hoy en intervals.icu.
+
+    intervals.icu lo sincroniza solo con Garmin Connect (la opción 'Cargar
+    entrenamientos planificados' está activada), así el plan aparece en el
+    reloj sin intervención. Falla con un aviso, nunca rompe el dashboard.
+    """
+    today = TODAY.isoformat()
+    try:
+        events = requests.get(
+            f"{API}/athlete/{ATHLETE}/events", auth=AUTH, timeout=60,
+            params={"oldest": today, "newest": today, "category": "WORKOUT"},
+        ).json()
+        mine = [e for e in events if isinstance(e, dict)
+                and (e.get("name") or "").startswith(WORKOUT_PREFIX)]
+    except Exception as e:
+        print(f"AVISO: no pude listar eventos: {e}")
+        return {"status": "error", "detail": str(e)}
+
+    # días de descanso o sin datos: borrar el entreno si existía
+    if plan["kind"] in ("descanso", "sin_datos"):
+        for ev in mine:
+            try:
+                requests.delete(f"{API}/athlete/{ATHLETE}/events/{ev['id']}",
+                                auth=AUTH, timeout=60)
+                print(f"Entreno {ev['id']} borrado (hoy toca {plan['kind']})")
+            except Exception as e:
+                print(f"AVISO: no pude borrar evento {ev.get('id')}: {e}")
+        return {"status": "sin_workout", "reason": plan["kind"]}
+
+    workout_text = plan.get("workout_text", "")
+    body = {
+        "category": "WORKOUT",
+        "start_date_local": f"{today}T00:00:00",
+        "type": "Ride",
+        "name": f"{WORKOUT_PREFIX}: {plan['title']}",
+        "description": workout_text,
+    }
+    try:
+        if mine:
+            r = requests.put(f"{API}/athlete/{ATHLETE}/events/{mine[0]['id']}",
+                             auth=AUTH, json=body, timeout=60)
+        else:
+            r = requests.post(f"{API}/athlete/{ATHLETE}/events",
+                              auth=AUTH, json=body, timeout=60)
+        print(f"Workout {'actualizado' if mine else 'creado'}: HTTP {r.status_code} "
+              f"→ {r.text[:200]}")
+        return {"status": "ok" if r.ok else "error", "http": r.status_code}
+    except Exception as e:
+        print(f"AVISO: no pude subir el workout: {e}")
+        return {"status": "error", "detail": str(e)}
+
+
+def suggest_route(plan, rides):
+    """Recomienda una ruta propia ya hecha que encaje con el entreno de hoy.
+
+    Series/tempo → la más llana; fondo → la más larga/con subidas.
+    Incluye el objetivo de superar la vez anterior.
+    """
+    candidates = [r for r in rides if r.get("distance_km") and r["distance_km"] >= 10
+                  and r.get("elevation_m") is not None and r.get("moving_time_s")]
+    if not candidates or plan["kind"] in ("descanso", "sin_datos"):
+        return None
+
+    def hilliness(r):
+        return r["elevation_m"] / r["distance_km"]  # m de subida por km
+
+    if plan["kind"] in ("intensidad", "tempo"):
+        pick = min(candidates, key=hilliness)
+        reason = (f"tu ruta más rodadora ({hilliness(pick):.0f} m de desnivel por km): "
+                  "ideal para hacer los bloques sin cortes")
+    elif plan["kind"] == "resistencia":
+        pick = max(candidates, key=lambda r: (r["distance_km"], hilliness(r)))
+        reason = "tu ruta más larga: perfecta para el fondo en Z2"
+    else:  # suave
+        pick = min(candidates, key=lambda r: r["distance_km"])
+        reason = "tu ruta más corta, para rodar suave sin exigirte"
+
+    mins = pick["moving_time_s"] / 60
+    return {
+        "name": pick.get("name"),
+        "date": pick.get("date"),
+        "distance_km": pick.get("distance_km"),
+        "elevation_m": round(pick.get("elevation_m") or 0),
+        "last_time_min": round(mins),
+        "reason": reason,
+        "challenge": f"La última vez ({pick.get('date')}) la hiciste en {round(mins)} min "
+                     f"— si el plan es de calidad, intentá mejorar ese tiempo en los tramos duros.",
+    }
+
+
 def fetch_all():
     oldest = (TODAY - timedelta(days=180)).isoformat()
     newest = TODAY.isoformat()
@@ -163,6 +257,7 @@ def build(wellness, activities, athlete):
         sleep_score=sleep_score_today, readiness=readiness_today,
         load_recent=[day_load(i) for i in range(7)],
     )
+    plan["route"] = suggest_route(plan, rides)
 
     # ---------- alertas
     alerts = []
@@ -323,7 +418,17 @@ def make_plan(tsb, acwr, acute, chronic, hrv_today, hrv30, sleep_secs,
     if budget is not None and est > budget and kind in ("intensidad", "tempo", "resistencia"):
         why.append(f"El entreno se acorta para respetar el presupuesto de ~{budget:.0f} TSS.")
 
-    return {"kind": kind, "title": title, "steps": steps, "est_load": est, "why": why}
+    # texto de workout en la sintaxis de intervals.icu (zonas de FC),
+    # que intervals convierte en entreno estructurado y manda a Garmin
+    workout_texts = {
+        "suave": "- 10m Z1 HR\n- 35m Z2 HR\n- 10m Z1 HR",
+        "resistencia": "- 15m Z2 HR\n- 75m Z2 HR\n- 10m Z1 HR",
+        "intensidad": "Calentamiento\n- 15m Z2 HR\n\n4x\n- 4m Z5 HR\n- 4m Z1 HR\n\nVuelta a la calma\n- 10m Z1 HR",
+        "tempo": "Calentamiento\n- 15m Z2 HR\n\n3x\n- 10m Z3 HR\n- 5m Z1 HR\n\nVuelta a la calma\n- 10m Z1 HR",
+    }
+
+    return {"kind": kind, "title": title, "steps": steps, "est_load": est,
+            "why": why, "workout_text": workout_texts.get(kind, "")}
 
 
 def main():
@@ -342,6 +447,10 @@ def main():
         print("campos actividad:", sorted(activities[0].keys())[:40])
 
     data = build(wellness, activities, athlete)
+
+    if os.environ.get("PUSH_WORKOUTS", "1") != "0":
+        data["plan"]["push"] = upsert_workout(data["plan"])
+
     path = os.path.join(out_dir, "data.json")
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=1)
