@@ -18,7 +18,7 @@ from fastapi.responses import FileResponse  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 from pydantic import BaseModel  # noqa: E402
 
-from backend import garmin_client, sync  # noqa: E402
+from backend import garmin_client, metrics, sync  # noqa: E402
 from backend.db import (  # noqa: E402
     get_all_settings,
     get_db,
@@ -123,7 +123,9 @@ def do_sync(body: SyncBody | None = None):
         raise HTTPException(status_code=401, detail="Garmin pide código MFA: logueate desde la web")
     if g is None:
         raise HTTPException(status_code=401, detail="No hay sesión de Garmin: logueate primero")
-    return sync.run_full_sync(g, body.days_activities, body.days_daily)
+    result = sync.run_full_sync(g, body.days_activities, body.days_daily)
+    result["loads"] = metrics.recompute_all_loads()
+    return result
 
 
 # ---------------------------------------------------------------- datos
@@ -160,7 +162,20 @@ def write_settings(body: SettingsBody):
         if isinstance(value, bool):
             value = "1" if value else "0"
         set_setting(key, value)
+    metrics.recompute_all_loads()
     return get_all_settings()
+
+
+# ------------------------------------------------- métricas de carga
+
+@app.get("/api/metrics/summary")
+def metrics_summary():
+    return metrics.summary()
+
+
+@app.get("/api/metrics/load")
+def metrics_load(days: int = 120):
+    return metrics.daily_load_series(days)
 
 
 # ---------------------------------------------------------------- frontend

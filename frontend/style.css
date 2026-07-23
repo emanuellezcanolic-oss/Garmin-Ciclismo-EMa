@@ -104,3 +104,108 @@ th, td {
 th { color: #5a6572; font-weight: 600; }
 
 tbody tr:hover { background: #f0f4f8; }
+
+/* ---------------- carga de entrenamiento ---------------- */
+
+.tiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 12px 0;
+}
+
+.tile {
+  flex: 1 1 140px;
+  background: #f9f9f7;
+  border: 1px solid rgba(11, 11, 11, 0.1);
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tile-label { font-size: 0.78rem; color: #52514e; }
+.tile-value { font-size: 1.5rem; font-weight: 650; color: #0b0b0b; }
+.tile-sub { font-size: 0.72rem; color: #898781; }
+
+.alert {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  border-radius: 8px;
+  padding: 9px 12px;
+  margin: 8px 0;
+  font-size: 0.85rem;
+  border: 1px solid rgba(11, 11, 11, 0.1);
+}
+
+.alert .alert-icon { flex: none; }
+.alert-warning  { background: #fdf6e3; }
+.alert-serious  { background: #fdeee7; }
+.alert-critical { background: #fbe9e9; }
+
+/* gráfico */
+
+.viz-root {
+  --surface-1: #fcfcfb;
+  --text-primary: #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted: #898781;
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+  --series-ctl: #2a78d6;
+  --series-atl: #eb6834;
+  --series-tsb: #1baf7a;
+  background: var(--surface-1);
+  border: 1px solid rgba(11, 11, 11, 0.1);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-top: 8px;
+}
+
+.chart-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 0.78rem; color: var(--text-secondary); }
+.legend-item { display: inline-flex; align-items: center; gap: 5px; }
+.dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.dot-ctl { background: var(--series-ctl); }
+.dot-atl { background: var(--series-atl); }
+.dot-tsb { background: var(--series-tsb); }
+
+.linklike {
+  background: none;
+  border: none;
+  color: #1c5cab;
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 2px 4px;
+  text-decoration: underline;
+}
+.linklike:hover { background: none; color: #104281; }
+
+#load-chart { position: relative; }
+#load-chart svg { display: block; width: 100%; height: auto; }
+
+.chart-tooltip {
+  position: absolute;
+  pointer-events: none;
+  background: #fff;
+  border: 1px solid rgba(11, 11, 11, 0.15);
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  padding: 6px 10px;
+  font-size: 0.75rem;
+  color: var(--text-primary);
+  white-space: nowrap;
+  display: none;
+  z-index: 5;
+}
+.chart-tooltip .tt-row { display: flex; align-items: center; gap: 6px; }
+.chart-tooltip .tt-val { margin-left: auto; font-variant-numeric: tabular-nums; padding-left: 10px; }

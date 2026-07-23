@@ -61,7 +61,7 @@ coach.db            # base de datos local (se crea sola, no va a git)
 ## Fases del proyecto
 
 1. ✅ Autenticación Garmin + sincronización de datos
-2. ⬜ Métricas de carga: TRIMP/TSS por salida, CTL/ATL/TSB, ACWR, tendencias HRV
+2. ✅ Métricas de carga: TRIMP/TSS por salida, CTL/ATL/TSB, ACWR, tendencias HRV
 3. ⬜ Generación del plan diario/semanal basado en recuperación y progresión
 4. ⬜ Subida del plan como workout estructurado a Garmin + programación
 5. ⬜ Recomendación de rutas MTB con Openrouteservice (+ clima con OpenWeather)

@@ -45,6 +45,35 @@
       </div>
 
       <div class="card">
+        <h2>Carga de entrenamiento</h2>
+        <div id="load-alerts"></div>
+        <div class="tiles">
+          <div class="tile"><span class="tile-label">Fitness (CTL)</span><span class="tile-value" id="tile-ctl">—</span><span class="tile-sub">carga crónica 42 días</span></div>
+          <div class="tile"><span class="tile-label">Fatiga (ATL)</span><span class="tile-value" id="tile-atl">—</span><span class="tile-sub">carga aguda 7 días</span></div>
+          <div class="tile"><span class="tile-label">Forma (TSB)</span><span class="tile-value" id="tile-tsb">—</span><span class="tile-sub">fitness − fatiga</span></div>
+          <div class="tile"><span class="tile-label">ACWR</span><span class="tile-value" id="tile-acwr">—</span><span class="tile-sub" id="tile-acwr-sub">aguda / crónica</span></div>
+        </div>
+        <div class="viz-root">
+          <div class="chart-head">
+            <div class="legend">
+              <span class="legend-item"><span class="dot dot-ctl"></span>Fitness (CTL)</span>
+              <span class="legend-item"><span class="dot dot-atl"></span>Fatiga (ATL)</span>
+              <span class="legend-item"><span class="dot dot-tsb"></span>Forma (TSB)</span>
+            </div>
+            <button type="button" id="toggle-load-table" class="linklike">Ver tabla</button>
+          </div>
+          <div id="load-chart"></div>
+          <div class="table-wrap hidden" id="load-table-wrap">
+            <table>
+              <thead><tr><th>Fecha</th><th>TSS día</th><th>CTL</th><th>ATL</th><th>TSB</th></tr></thead>
+              <tbody id="load-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="tiles" id="trend-tiles"></div>
+      </div>
+
+      <div class="card">
         <h2>Mis datos (necesarios para las zonas y el plan)</h2>
         <p class="hint">Completá estos valores — no los inventamos. Si no tenés potenciómetro, el TSS se estima por frecuencia cardíaca (TRIMP).</p>
         <form id="settings-form" class="row">
@@ -82,7 +111,7 @@
           <table id="activities-table">
             <thead><tr>
               <th>Fecha</th><th>Nombre</th><th>Tipo</th><th>Dist.</th><th>Tiempo</th>
-              <th>Desnivel</th><th>FC prom</th><th>FC máx</th><th>Potencia</th>
+              <th>Desnivel</th><th>FC prom</th><th>FC máx</th><th>Potencia</th><th>TSS</th>
             </tr></thead>
             <tbody></tbody>
           </table>
