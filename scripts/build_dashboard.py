@@ -420,11 +420,13 @@ def make_plan(tsb, acwr, acute, chronic, hrv_today, hrv30, sleep_secs,
 
     # texto de workout en la sintaxis de intervals.icu (zonas de FC),
     # que intervals convierte en entreno estructurado y manda a Garmin
+    warmup = "Calentamiento\n- 5m Z1 HR\n- 5m Z2 HR\n- 5m Z3 HR\n"
+    cooldown = "\nVuelta a la calma\n- 5m Z2 HR\n- 5m Z1 HR"
     workout_texts = {
-        "suave": "- 10m Z1 HR\n- 35m Z2 HR\n- 10m Z1 HR",
-        "resistencia": "- 15m Z2 HR\n- 75m Z2 HR\n- 10m Z1 HR",
-        "intensidad": "Calentamiento\n- 15m Z2 HR\n\n4x\n- 4m Z5 HR\n- 4m Z1 HR\n\nVuelta a la calma\n- 10m Z1 HR",
-        "tempo": "Calentamiento\n- 15m Z2 HR\n\n3x\n- 10m Z3 HR\n- 5m Z1 HR\n\nVuelta a la calma\n- 10m Z1 HR",
+        "suave": "Calentamiento\n- 5m Z1 HR\n- 5m Z2 HR\n\nRodaje regenerativo\n- 30m Z2 HR\n" + cooldown,
+        "resistencia": warmup + "\nFondo aeróbico\n- 40m Z2 HR\n- 20m Z3 HR\n- 15m Z2 HR\n" + cooldown,
+        "intensidad": warmup + "\nIntervalos VO2max 4x\n- 4m Z5 HR\n- 4m Z1 HR\n" + cooldown,
+        "tempo": warmup + "\nBloques de tempo 3x\n- 10m Z4 HR\n- 5m Z1 HR\n" + cooldown,
     }
 
     return {"kind": kind, "title": title, "steps": steps, "est_load": est,
