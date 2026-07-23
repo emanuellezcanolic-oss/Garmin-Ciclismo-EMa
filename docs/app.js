@@ -71,7 +71,12 @@ async function init() {
       `7d: ${t.rhr7 ?? "—"} · 30d: ${t.rhr30 ?? "—"}`) +
     tile("Sueño anoche", fmtDur(t.sleep_secs),
       t.sleep_score != null ? `score ${Math.round(t.sleep_score)}` : "") +
-    tile("Training readiness", t.readiness != null ? Math.round(t.readiness) : null, "de Garmin");
+    tile("Training readiness", t.readiness != null ? Math.round(t.readiness) : null, "de Garmin") +
+    tile("Peso", t.weight != null ? t.weight + " kg" : null,
+      t.weight7 != null
+        ? `prom. 7d: ${t.weight7} kg` +
+          (t.weight_delta30 != null ? ` · ${t.weight_delta30 > 0 ? "+" : ""}${t.weight_delta30} kg vs. mes previo` : "")
+        : "cargalo en Garmin Connect");
 
   // ---- gráfico y tabla
   renderLoadChart(data.series || []);

@@ -165,6 +165,7 @@ def build(wellness, activities, athlete):
             "sleep_secs": num(w.get("sleepSecs")),
             "sleep_score": num(w.get("sleepScore")),
             "readiness": num(w.get("readiness")),
+            "weight": num(w.get("weight")),
         }
 
     # ---------- actividades de ciclismo
@@ -239,6 +240,14 @@ def build(wellness, activities, athlete):
 
     hrv7, hrv30 = avg(recent("hrv", 7)), avg(recent("hrv", 30))
     rhr7, rhr30 = avg(recent("resting_hr", 7)), avg(recent("resting_hr", 30))
+    weights = recent("weight", 90)
+    weight_last = round(weights[0], 1) if weights else None
+    weight7 = avg(weights[:7]) if weights else None
+    # cambio en ~30 días: promedio de la semana más vieja disponible vs. la última
+    weight_delta30 = None
+    if len(weights) >= 8:
+        old = weights[7:35] or weights[7:]
+        weight_delta30 = round((sum(weights[:7]) / len(weights[:7])) - (sum(old) / len(old)), 1)
     today_w = days.get(TODAY.isoformat(), {})
     yesterday_w = days.get((TODAY - timedelta(days=1)).isoformat(), {})
     hrv_today = today_w.get("hrv") or yesterday_w.get("hrv")
@@ -289,6 +298,7 @@ def build(wellness, activities, athlete):
             "rhr7": rhr7, "rhr30": rhr30,
             "sleep_secs": sleep_today, "sleep_score": sleep_score_today,
             "readiness": readiness_today,
+            "weight": weight_last, "weight7": weight7, "weight_delta30": weight_delta30,
         },
         "plan": plan,
         "alerts": alerts,
