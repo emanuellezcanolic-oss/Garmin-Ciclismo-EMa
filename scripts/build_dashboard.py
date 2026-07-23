@@ -362,6 +362,22 @@ def make_plan(tsb, acwr, acute, chronic, hrv_today, hrv30, sleep_secs,
         else:
             why.append(f"TSB {tsb}: forma/frescura razonable.")
 
+    # frecuencia objetivo: 4-5 días/semana → con 5+ días ya pedaleados, toca descanso
+    days_ridden = sum(1 for load in load_recent if load and load > 0)
+    yesterday_load = load_recent[1] if len(load_recent) > 1 else 0
+    if days_ridden >= 5 and flags_bad < 3:
+        why.append(f"Ya pedaleaste {days_ridden} de los últimos 7 días (tu objetivo es 4-5): "
+                   "el descanso de hoy es parte del plan, ahí es donde el cuerpo asimila.")
+        return {
+            "kind": "descanso",
+            "title": "Día de descanso programado",
+            "steps": [
+                {"phase": "Opción A", "desc": "Descanso total."},
+                {"phase": "Opción B", "desc": "Caminata o vuelta muy suave 20-30 min en Z1, solo para mover las piernas."},
+            ],
+            "est_load": 0, "why": why, "workout_text": "",
+        }
+
     # presupuesto de carga para no pasar ACWR 1.3
     budget = None
     if chronic:
@@ -393,6 +409,17 @@ def make_plan(tsb, acwr, acute, chronic, hrv_today, hrv30, sleep_secs,
         steps = [
             {"phase": "Calentamiento", "desc": "15 min progresivos Z1 → Z2."},
             {"phase": "Bloque principal", "desc": "60–90 min en Z2 sostenida. En MTB: sendero rodador, subidas largas sentado a ritmo constante, sin picos."},
+            {"phase": "Vuelta a la calma", "desc": "10 min en Z1."},
+        ]
+        est = 75
+    elif yesterday_load >= 120:
+        kind = "resistencia"
+        title = "Fondo aeróbico Z2 (ayer fue día fuerte)"
+        why.append(f"Ayer acumulaste {yesterday_load:.0f} TSS: dos días duros seguidos no suman, "
+                   "hoy se rueda en Z2.")
+        steps = [
+            {"phase": "Calentamiento", "desc": "15 min progresivos Z1 → Z2."},
+            {"phase": "Bloque principal", "desc": "60-90 min en Z2 sostenida, sin picos."},
             {"phase": "Vuelta a la calma", "desc": "10 min en Z1."},
         ]
         est = 75
