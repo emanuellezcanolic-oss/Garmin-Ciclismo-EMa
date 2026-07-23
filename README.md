@@ -9,36 +9,36 @@ Garmin y recomienda rutas MTB.
 **Estado actual: Fase 1 completa** — autenticación con Garmin + sincronización
 de datos + panel web para verlos.
 
-## Cómo usarla (paso a paso)
+## Cómo usarla en Windows (la primera vez)
 
-Necesitás tener Python 3.10 o más nuevo instalado ([python.org](https://www.python.org/downloads/)).
+Necesitás Python instalado (ya lo tenés si `pip` te funciona en la terminal).
 
-1. **Abrí una terminal en la carpeta del proyecto** y ejecutá una sola vez:
+1. **Abrí Git CMD** y pegá estas líneas, una por una (descarga el proyecto a
+   tu escritorio):
 
-   ```bash
-   pip install -r requirements.txt
-   cp .env.example .env
+   ```
+   cd %USERPROFILE%\Desktop
+   git clone -b claude/garmin-cycling-coach-5sfipu https://github.com/emanuellezcanolic-oss/Garmin-Ciclismo-EMa.git
    ```
 
-   (En Windows, en vez de `cp` usá `copy .env.example .env`.)
+2. **Abrí la carpeta `Garmin-Ciclismo-EMa` que apareció en tu escritorio y
+   hacé doble click en `iniciar.bat`.** Ese archivo instala todo, arranca el
+   servidor y te abre el navegador solo. Dejá la ventana negra abierta
+   mientras uses la app.
 
-2. **Editá el archivo `.env`** con el Bloc de notas o similar. Podés dejar
-   `GARMIN_EMAIL` y `GARMIN_PASSWORD` vacíos y loguearte desde la página web,
-   o completarlos para que se conecte solo. Las API keys de rutas y clima se
-   usan recién en fases siguientes.
-
-3. **Arrancá el servidor:**
-
-   ```bash
-   uvicorn backend.main:app --reload
-   ```
-
-4. **Abrí el navegador en** <http://localhost:8000>
-
-5. En la página: iniciá sesión con tu cuenta de Garmin (si Garmin te manda un
+3. En la página: iniciá sesión con tu cuenta de Garmin (si Garmin te manda un
    código por email, la página te lo va a pedir), tocá **Sincronizar ahora**, y
    completá tus datos (FC máxima, FC en reposo, si tenés potenciómetro) en la
    sección "Mis datos" — se necesitan para calcular zonas y carga en la fase 2.
+
+**Las próximas veces**: solo doble click en `iniciar.bat`. Nada más.
+
+Para actualizar la app cuando haya cambios nuevos: abrí Git CMD y pegá
+
+```
+cd %USERPROFILE%\Desktop\Garmin-Ciclismo-EMa
+git pull
+```
 
 La sesión de Garmin queda guardada en la carpeta `.garmin_tokens`, así que no
 te pide login cada vez. Mientras el servidor esté corriendo, sincroniza solo
