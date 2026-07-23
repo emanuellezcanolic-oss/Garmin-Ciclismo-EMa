@@ -206,6 +206,22 @@ def build(wellness, activities, athlete):
 def make_plan(tsb, acwr, acute, chronic, hrv_today, hrv30, sleep_secs,
               sleep_score, readiness, load_recent):
     """Decide el entreno de hoy y lo justifica con los números."""
+    # Sin historial suficiente no se recomienda nada: sería inventar.
+    if not chronic or chronic <= 0:
+        return {
+            "kind": "sin_datos",
+            "title": "Recopilando tus datos…",
+            "steps": [{
+                "phase": "Todavía no hay recomendación",
+                "desc": "No hay suficiente historial de salidas para calcular tu carga crónica. "
+                        "Importá tus datos viejos desde intervals.icu (Ajustes → Conexiones → "
+                        "tarjeta Garmin → 'Importar todos los datos de Garmin') y esperá unos minutos. "
+                        "Con ~4 semanas de historial el plan se activa solo.",
+            }],
+            "est_load": 0,
+            "why": ["Sin carga crónica (promedio de las últimas 4 semanas) no se puede dosificar "
+                    "un entreno de forma segura ni útil."],
+        }
     why = []
     flags_bad = 0
 
