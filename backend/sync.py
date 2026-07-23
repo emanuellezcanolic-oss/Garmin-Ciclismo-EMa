@@ -77,7 +77,7 @@ def sync_activities(g, days_back: int = 90) -> dict:
                        avg_power=?, norm_power=?, has_power=?, calories=?, raw_json=?,
                        synced_at=datetime('now')
                        WHERE activity_id=?""",
-                    row[1:15] + (row[15], act_id),
+                    row[1:14] + (row[15], act_id),
                 )
                 updated += 1
 
