@@ -167,6 +167,7 @@ def build(wellness, activities, athlete):
             "readiness": num(w.get("readiness")),
             "weight": num(w.get("weight")),
             "vo2max": num(w.get("vo2max")),
+            "stress": num(w.get("stress")),
         }
 
     # ---------- actividades de ciclismo
@@ -252,6 +253,7 @@ def build(wellness, activities, athlete):
     if len(weights) >= 8:
         old = weights[7:35] or weights[7:]
         weight_delta30 = round((sum(weights[:7]) / len(weights[:7])) - (sum(old) / len(old)), 1)
+    stress7 = avg(recent("stress", 7))
     today_w = days.get(TODAY.isoformat(), {})
     yesterday_w = days.get((TODAY - timedelta(days=1)).isoformat(), {})
     hrv_today = today_w.get("hrv") or yesterday_w.get("hrv")
@@ -305,6 +307,7 @@ def build(wellness, activities, athlete):
             "readiness": readiness_today,
             "weight": weight_last, "weight7": weight7, "weight_delta30": weight_delta30,
             "vo2max": vo2_last, "vo2max_delta90": vo2_delta90,
+            "stress": today_w.get("stress") or yesterday_w.get("stress"), "stress7": stress7,
         },
         "plan": plan,
         "goals": make_goals({

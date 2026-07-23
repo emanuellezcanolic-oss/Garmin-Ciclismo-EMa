@@ -91,7 +91,9 @@ async function init() {
     tile("VO2max (Garmin)", t.vo2max != null ? t.vo2max : null,
       t.vo2max_delta90 != null
         ? `${t.vo2max_delta90 > 0 ? "+" : ""}${t.vo2max_delta90} en 90 días`
-        : "estimado por tu reloj");
+        : "estimado por tu reloj") +
+    tile("Estrés (Garmin)", t.stress != null ? Math.round(t.stress) : null,
+      t.stress7 != null ? `promedio 7d: ${t.stress7}` : "0-100, menor es mejor");
 
   // ---- gráfico y tabla
   renderLoadChart(data.series || []);
