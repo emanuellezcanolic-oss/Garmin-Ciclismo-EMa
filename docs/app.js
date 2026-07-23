@@ -76,7 +76,11 @@ async function init() {
       t.weight7 != null
         ? `prom. 7d: ${t.weight7} kg` +
           (t.weight_delta30 != null ? ` · ${t.weight_delta30 > 0 ? "+" : ""}${t.weight_delta30} kg vs. mes previo` : "")
-        : "cargalo en Garmin Connect");
+        : "cargalo en Garmin Connect") +
+    tile("VO2max (Garmin)", t.vo2max != null ? t.vo2max : null,
+      t.vo2max_delta90 != null
+        ? `${t.vo2max_delta90 > 0 ? "+" : ""}${t.vo2max_delta90} en 90 días`
+        : "estimado por tu reloj");
 
   // ---- gráfico y tabla
   renderLoadChart(data.series || []);

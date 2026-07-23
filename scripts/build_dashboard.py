@@ -166,6 +166,7 @@ def build(wellness, activities, athlete):
             "sleep_score": num(w.get("sleepScore")),
             "readiness": num(w.get("readiness")),
             "weight": num(w.get("weight")),
+            "vo2max": num(w.get("vo2max")),
         }
 
     # ---------- actividades de ciclismo
@@ -240,6 +241,9 @@ def build(wellness, activities, athlete):
 
     hrv7, hrv30 = avg(recent("hrv", 7)), avg(recent("hrv", 30))
     rhr7, rhr30 = avg(recent("resting_hr", 7)), avg(recent("resting_hr", 30))
+    vo2s = recent("vo2max", 90)
+    vo2_last = round(vo2s[0], 1) if vo2s else None
+    vo2_delta90 = round(vo2s[0] - vo2s[-1], 1) if len(vo2s) >= 2 else None
     weights = recent("weight", 90)
     weight_last = round(weights[0], 1) if weights else None
     weight7 = avg(weights[:7]) if weights else None
@@ -299,6 +303,7 @@ def build(wellness, activities, athlete):
             "sleep_secs": sleep_today, "sleep_score": sleep_score_today,
             "readiness": readiness_today,
             "weight": weight_last, "weight7": weight7, "weight_delta30": weight_delta30,
+            "vo2max": vo2_last, "vo2max_delta90": vo2_delta90,
         },
         "plan": plan,
         "alerts": alerts,
@@ -386,6 +391,28 @@ def make_plan(tsb, acwr, acute, chronic, hrv_today, hrv30, sleep_secs,
                 {"phase": "Opción B", "desc": "Caminata o vuelta muy suave 20-30 min en Z1, solo para mover las piernas."},
             ],
             "est_load": 0, "why": why, "workout_text": "",
+        }
+
+    # semana de test (cada 4 semanas, miércoles): test de umbral de Friel,
+    # solo en frescura — un test con fatiga da un umbral falso y arruina las zonas
+    is_test_slot = TODAY.isocalendar()[1] % 4 == 0 and TODAY.weekday() == 2
+    if is_test_slot and flags_bad == 0 and (tsb is None or tsb > -10):
+        why.append("Toca test de umbral (cada 4 semanas): tus métricas de hoy muestran frescura, "
+                   "condición necesaria para que el resultado sea válido y recalibrar tus zonas de FC.")
+        return {
+            "kind": "test",
+            "title": "Test de umbral 30 min (protocolo Friel)",
+            "steps": [
+                {"phase": "Calentamiento", "desc": "15 min progresivos Z1 → Z3 con 2 aceleraciones cortas."},
+                {"phase": "Test", "desc": "30 min al MÁXIMO ritmo que puedas SOSTENER completo (como una carrera individual). "
+                                          "Apretá el botón LAP al minuto 10: tu FC promedio de los últimos 20 min es tu umbral (LTHR). "
+                                          "Terreno: subida constante o camino sin cortes, sin tráfico."},
+                {"phase": "Vuelta a la calma", "desc": "10-15 min en Z1."},
+            ],
+            "est_load": 95, "why": why,
+            "workout_text": ("Calentamiento\n- 5m Z1 HR\n- 5m Z2 HR\n- 5m Z3 HR\n\n"
+                             "Test 30 min a tope sostenible - LAP al minuto 10\n- 30m Z4 HR\n\n"
+                             "Vuelta a la calma\n- 5m Z2 HR\n- 10m Z1 HR"),
         }
 
     # presupuesto de carga para no pasar ACWR 1.3
