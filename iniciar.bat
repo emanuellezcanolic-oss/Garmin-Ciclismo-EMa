@@ -10,6 +10,15 @@ if errorlevel 1 (
     exit /b 1
 )
 
+rem Actualizar la app desde GitHub automaticamente (si hay internet)
+where git >nul 2>nul
+if not errorlevel 1 (
+    echo Buscando actualizaciones...
+    git pull --ff-only
+)
+echo Version instalada:
+git log -1 --oneline 2>nul
+
 if not exist .env (
     copy .env.example .env >nul
     echo Se creo el archivo .env con la configuracion inicial.
