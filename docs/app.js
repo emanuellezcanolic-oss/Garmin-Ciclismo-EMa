@@ -48,7 +48,18 @@ async function init() {
   if (p.route) {
     extra += `<div class="step">🗺️ <strong>Ruta sugerida:</strong> ${p.route.name} — ${p.route.distance_km} km, ${p.route.elevation_m} m de desnivel (${p.route.reason}). ${p.route.challenge}</div>`;
   }
+  if (p.nutrition && p.nutrition.length) {
+    extra += `<details><summary>🍽️ Nutrición de hoy (plan Lic. Zalazar)</summary><ul>` +
+      p.nutrition.map((n) => `<li>${n}</li>`).join("") + `</ul></details>`;
+  }
   $("plan-extra").innerHTML = extra;
+
+  $("goals-body").innerHTML = (data.goals || [])
+    .map((g) => `<tr>
+      <td>${g.metric}</td><td>${g.current ?? "—"}</td><td>${g.target ?? "—"}</td>
+      <td>${g.by ?? "—"}</td><td style="white-space:normal">${g.note}</td>
+    </tr>`)
+    .join("");
 
   // ---- alertas
   $("alerts").innerHTML = (data.alerts || [])

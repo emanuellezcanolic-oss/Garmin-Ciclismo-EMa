@@ -271,6 +271,7 @@ def build(wellness, activities, athlete):
         load_recent=[day_load(i) for i in range(7)],
     )
     plan["route"] = suggest_route(plan, rides)
+    plan["nutrition"] = nutrition_tips(plan["kind"])
 
     # ---------- alertas
     alerts = []
@@ -306,11 +307,81 @@ def build(wellness, activities, athlete):
             "vo2max": vo2_last, "vo2max_delta90": vo2_delta90,
         },
         "plan": plan,
+        "goals": make_goals({
+            "ctl": ctl_now, "vo2max": vo2_last, "weight": weight_last,
+        }),
         "alerts": alerts,
         "series": series,
         "rides": rides[:60],
         "counts": {"rides_180d": len(rides), "wellness_days": len(days)},
     }
+
+
+def nutrition_tips(kind):
+    """Guía nutricional del día según el entreno, basada en la estrategia de
+    la Lic. Zalazar (plan personal del atleta): fórmulas de comidas, timing
+    pre/intra/post y regla de las 3R."""
+    base = [
+        "Agua: 3 litros en el día (orina clara como control).",
+        "Almuerzo y cena: 50% del plato de verduras (3 colores, al menos 1 tipo B) + proteína magra + hidratos de calidad (legumbres/granos de tu guía).",
+    ]
+    if kind in ("descanso", "sin_datos", "suave"):
+        return base + [
+            "Día liviano: hidratos en cantidad INFERIOR en almuerzo; sin extras energéticos (frutos secos/pasta de maní solo si hay hambre real).",
+            "Desayuno/merienda: fruta + proteína + lácteo descremado + hidrato integral.",
+        ]
+    if kind == "resistencia":
+        return base + [
+            "CENA de la noche anterior al fondo: hidratos en cantidad SUPERIOR y de fácil digestión (arroz o fideos de arroz) + huevos o queso magro.",
+            "Desayuno 2 h antes: pan blanco o discos de arroz + mermelada/membrillo + 1 huevo + 1 fruta. Si tenés menos de 1 h: sacá proteína y fibra.",
+            "Si pedaleás más de 2 h: una ingesta cada 45 min (membrillo 40 g, pasas/arándanos 40 g, o isotónica). Más de 3 h: sumá ingestas complejas (sandwich de queso magro o de batata).",
+            "Post (3R): rehidratar con agua (1.5-2 L en la primera hora y media) + 2 frutas + 1 scoop de proteína; después la comida principal.",
+        ]
+    # intensidad / tempo / test
+    return base + [
+        "Pre entreno intenso: NADA de lácteos antes de la bici; proteína de fácil digestión (huevo o pescado) en la comida previa; ingesta completa 1:30-2 h antes.",
+        "Llevá por las dudas: un cuadradito de membrillo o puñado de pasas. Café pre entreno: recomendado.",
+        "Post (3R): agua + 1 fruta apenas bajás de la bici + proteína (huevo, claras o scoop).",
+    ]
+
+
+def make_goals(today):
+    """Objetivos con plazo, calculados desde los valores actuales."""
+    goals = []
+    horizon = (TODAY + timedelta(weeks=12)).isoformat()
+    ctl = today.get("ctl")
+    if ctl is not None:
+        goals.append({
+            "metric": "Fitness (CTL)",
+            "current": ctl, "target": round(min(ctl + 10, 90)), "by": horizon,
+            "note": "Subida segura: ~5-7 puntos por mes, sin pasar ACWR 1.3.",
+        })
+    vo2 = today.get("vo2max")
+    if vo2 is not None:
+        goals.append({
+            "metric": "VO2max (est. Garmin)",
+            "current": vo2, "target": round(vo2 * 1.06, 1), "by": horizon,
+            "note": "+6% en 12 semanas es realista entrenando polarizado; el techo lo pone la genética, y a ese techo se llega tras años, no meses.",
+        })
+    w = today.get("weight")
+    if w is not None:
+        goals.append({
+            "metric": "Peso",
+            "current": w, "target": round(w - 6, 1), "by": horizon,
+            "note": "-0.5 kg/semana (0.4-0.5% del peso corporal): preserva músculo y rendimiento. En MTB cada kg menos es potencia/kg gratis.",
+        })
+    else:
+        goals.append({
+            "metric": "Peso",
+            "current": None, "target": None, "by": None,
+            "note": "Cargá tu peso en Garmin Connect (2-3 veces/semana, en ayunas) y el objetivo se calcula solo.",
+        })
+    goals.append({
+        "metric": "Umbral (LTHR)",
+        "current": None, "target": None, "by": None,
+        "note": "Se mide con el test de 30 min cada 4 semanas: es el checkpoint objetivo de progreso.",
+    })
+    return goals
 
 
 def make_plan(tsb, acwr, acute, chronic, hrv_today, hrv30, sleep_secs,
