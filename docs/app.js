@@ -54,6 +54,16 @@ async function init() {
   }
   $("plan-extra").innerHTML = extra;
 
+  const health = data.health || {};
+  const hflags = health.flags || [];
+  $("health-flags").innerHTML = hflags.length
+    ? hflags.map((a) => `<div class="alert alert-${a.level}">
+        <span class="alert-icon">${ALERT_ICONS[a.level] || "ℹ️"}</span><span>${a.text}</span></div>`).join("")
+    : `<div class="alert" style="background:#eef7ee"><span class="alert-icon">✅</span>
+       <span>Sin desvíos en tus señales (FC en reposo, HRV, sueño y estrés dentro de tu rango habitual).</span></div>`;
+  $("health-redflags").textContent = health.red_flags || "";
+  $("health-disclaimer").textContent = health.disclaimer || "";
+
   $("goals-body").innerHTML = (data.goals || [])
     .map((g) => `<tr>
       <td>${g.metric}</td><td>${g.current ?? "—"}</td><td>${g.target ?? "—"}</td>

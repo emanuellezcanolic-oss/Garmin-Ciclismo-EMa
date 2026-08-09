@@ -254,6 +254,10 @@ def build(wellness, activities, athlete):
         old = weights[7:35] or weights[7:]
         weight_delta30 = round((sum(weights[:7]) / len(weights[:7])) - (sum(old) / len(old)), 1)
     stress7 = avg(recent("stress", 7))
+    rhr3 = avg(recent("resting_hr", 3))
+    hrv3 = avg(recent("hrv", 3))
+    stress3 = avg(recent("stress", 3))
+    sleep3 = avg(recent("sleep_secs", 3))
     today_w = days.get(TODAY.isoformat(), {})
     yesterday_w = days.get((TODAY - timedelta(days=1)).isoformat(), {})
     hrv_today = today_w.get("hrv") or yesterday_w.get("hrv")
@@ -264,6 +268,10 @@ def build(wellness, activities, athlete):
     current = series[-1] if series else {}
     ctl_now, atl_now = current.get("ctl"), current.get("atl")
     tsb_now = current.get("tsb")
+
+    rhr_last = today_w.get("resting_hr") or yesterday_w.get("resting_hr")
+    health = health_signals(rhr3, rhr30, rhr_last, hrv3, hrv30,
+                            stress3, stress7, sleep3, tsb_now)
 
     # ---------- plan del día (fase 3: decisión basada en datos)
     plan = make_plan(
@@ -313,6 +321,7 @@ def build(wellness, activities, athlete):
         "goals": make_goals({
             "ctl": ctl_now, "vo2max": vo2_last, "weight": weight_last,
         }),
+        "health": health,
         "alerts": alerts,
         "series": series,
         "rides": rides[:60],
@@ -385,6 +394,72 @@ def make_goals(today):
         "note": "Se mide con el test de 30 min cada 4 semanas: es el checkpoint objetivo de progreso.",
     })
     return goals
+
+
+def health_signals(rhr3, rhr30, rhr_last, hrv3, hrv30, stress3, stress7,
+                   sleep3_secs, tsb):
+    """TAMIZAJE (no diagnóstico): marca desvíos respecto a la línea de base
+    del propio atleta que ameritan atención o consulta médica.
+
+    Umbrales de la literatura de monitoreo de carga (FC reposo, HRV, sueño).
+    NUNCA afirma una enfermedad: sólo señala 'algo cambió, prestá atención'.
+    """
+    flags = []
+    rhr_up = (rhr3 - rhr30) if (rhr3 is not None and rhr30 is not None) else None
+    hrv_pct = ((hrv3 - hrv30) / hrv30 * 100) if (hrv3 and hrv30 and hrv30 > 0) else None
+
+    # 1) Taquicardia en reposo (bandera roja objetiva)
+    if rhr_last is not None and rhr_last > 100:
+        flags.append({"level": "critical",
+            "text": f"FC en reposo {rhr_last:.0f} lpm (por encima de 100 = taquicardia en reposo). "
+                    "Si se mantiene o tenés síntomas (palpitaciones, mareo, falta de aire), consultá a un médico."})
+
+    # 2) FC en reposo elevada vs tu baseline
+    if rhr_up is not None and rhr_up >= 12:
+        flags.append({"level": "serious",
+            "text": f"Tu FC en reposo de los últimos 3 días ({rhr3:.0f} lpm) está {rhr_up:.0f} lpm por encima de "
+                    f"tu baseline de 30 días ({rhr30:.0f}). Causas frecuentes: infección/gripe en curso, "
+                    "sobreentrenamiento, deshidratación, alcohol o estrés. Si dura más de 3 días o te sentís mal, consultá a un médico."})
+    elif rhr_up is not None and rhr_up >= 7:
+        flags.append({"level": "warning",
+            "text": f"FC en reposo algo elevada ({rhr3:.0f} vs baseline {rhr30:.0f} lpm, +{rhr_up:.0f}). "
+                    "Suele ser fatiga, poco sueño, estrés o el inicio de un resfrío. Bajá la intensidad y vigilá."})
+
+    # 3) HRV deprimida
+    if hrv_pct is not None and hrv_pct <= -15:
+        flags.append({"level": "serious",
+            "text": f"Tu HRV de 3 días ({hrv3:.0f} ms) está {abs(hrv_pct):.0f}% por debajo de tu baseline "
+                    f"({hrv30:.0f} ms): recuperación comprometida o estrés fisiológico marcado."})
+    elif hrv_pct is not None and hrv_pct <= -10:
+        flags.append({"level": "warning",
+            "text": f"HRV por debajo de lo habitual ({hrv3:.0f} vs {hrv30:.0f} ms). Priorizá descanso y sueño."})
+
+    # 4) Sueño insuficiente sostenido
+    if sleep3_secs is not None and sleep3_secs < 6 * 3600:
+        flags.append({"level": "warning",
+            "text": f"Vienes durmiendo poco (promedio {sleep3_secs/3600:.1f} h en 3 días). "
+                    "El sueño es donde el cuerpo repara: menos de 6 h sostenido sube el riesgo de lesión y enfermedad."})
+
+    # 5) Estrés fisiológico alto (Garmin, 0-100)
+    if stress3 is not None and stress3 > 55:
+        flags.append({"level": "info",
+            "text": f"Estrés promedio alto (últimos 3 días: {stress3:.0f}/100). Sumá recuperación activa, respiración y buena hidratación."})
+
+    # 6) Patrón combinado sugestivo de sobreentrenamiento / enfermedad incubando
+    if (rhr_up is not None and rhr_up >= 5 and hrv_pct is not None and hrv_pct <= -8
+            and tsb is not None and tsb < -15):
+        flags.append({"level": "serious",
+            "text": "Patrón combinado: FC en reposo ↑, HRV ↓ y fatiga alta (TSB muy negativo) a la vez. "
+                    "Es la firma clásica de sobreentrenamiento o de estar incubando algo. Tomate 2-3 días muy suaves; "
+                    "si aparecen fiebre, dolores o malestar, consultá a un médico."})
+
+    return {
+        "flags": flags,
+        "disclaimer": ("Esto es un TAMIZAJE, no un diagnóstico. Detecta desvíos respecto a tu propia línea de base, "
+                       "no enfermedades. La FC óptica del reloj no es un electrocardiograma y no detecta arritmias."),
+        "red_flags": ("🚨 Consultá a un médico YA si tenés: dolor o presión en el pecho, palpitaciones, mareos o desmayos, "
+                      "falta de aire inusual. Para alguien que entrena fuerte, un apto físico deportivo con ECG y ergometría es muy recomendable."),
+    }
 
 
 def make_plan(tsb, acwr, acute, chronic, hrv_today, hrv30, sleep_secs,
