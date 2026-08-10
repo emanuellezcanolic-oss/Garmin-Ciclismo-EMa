@@ -61,8 +61,8 @@ async function init() {
         <span class="alert-icon">${ALERT_ICONS[a.level] || "ℹ️"}</span><span>${a.text}</span></div>`).join("")
     : `<div class="alert" style="background:#eef7ee"><span class="alert-icon">✅</span>
        <span>Sin desvíos en tus señales (FC en reposo, HRV, sueño y estrés dentro de tu rango habitual).</span></div>`;
-  $("health-redflags").textContent = health.red_flags || "";
-  $("health-disclaimer").textContent = health.disclaimer || "";
+  $("health-suggestions").innerHTML = (health.suggestions || [])
+    .map((s) => `<li>${s}</li>`).join("");
 
   $("goals-body").innerHTML = (data.goals || [])
     .map((g) => `<tr>

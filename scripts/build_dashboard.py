@@ -168,6 +168,7 @@ def build(wellness, activities, athlete):
             "weight": num(w.get("weight")),
             "vo2max": num(w.get("vo2max")),
             "stress": num(w.get("stress")),
+            "hydration_ml": num(w.get("hydrationVolume")) or num(w.get("hydration")),
         }
 
     # ---------- actividades de ciclismo
@@ -270,8 +271,10 @@ def build(wellness, activities, athlete):
     tsb_now = current.get("tsb")
 
     rhr_last = today_w.get("resting_hr") or yesterday_w.get("resting_hr")
+    hydration_today = today_w.get("hydration_ml") or yesterday_w.get("hydration_ml")
     health = health_signals(rhr3, rhr30, rhr_last, hrv3, hrv30,
-                            stress3, stress7, sleep3, tsb_now)
+                            stress3, stress7, sleep3, tsb_now,
+                            weight_last, weight7, hydration_today, day_load(1))
 
     # ---------- plan del día (fase 3: decisión basada en datos)
     plan = make_plan(
@@ -397,7 +400,8 @@ def make_goals(today):
 
 
 def health_signals(rhr3, rhr30, rhr_last, hrv3, hrv30, stress3, stress7,
-                   sleep3_secs, tsb):
+                   sleep3_secs, tsb, weight_last, weight7, hydration_ml,
+                   yesterday_load):
     """TAMIZAJE (no diagnóstico): marca desvíos respecto a la línea de base
     del propio atleta que ameritan atención o consulta médica.
 
@@ -453,13 +457,31 @@ def health_signals(rhr3, rhr30, rhr_last, hrv3, hrv30, stress3, stress7,
                     "Es la firma clásica de sobreentrenamiento o de estar incubando algo. Tomate 2-3 días muy suaves; "
                     "si aparecen fiebre, dolores o malestar, consultá a un médico."})
 
-    return {
-        "flags": flags,
-        "disclaimer": ("Esto es un TAMIZAJE, no un diagnóstico. Detecta desvíos respecto a tu propia línea de base, "
-                       "no enfermedades. La FC óptica del reloj no es un electrocardiograma y no detecta arritmias."),
-        "red_flags": ("🚨 Consultá a un médico YA si tenés: dolor o presión en el pecho, palpitaciones, mareos o desmayos, "
-                      "falta de aire inusual. Para alguien que entrena fuerte, un apto físico deportivo con ECG y ergometría es muy recomendable."),
-    }
+    # 7) DESHIDRATACIÓN — pérdida aguda de peso >2% vs tu semana (umbral ACSM)
+    if weight_last is not None and weight7 is not None and weight7 > 0:
+        drop_pct = (weight7 - weight_last) / weight7 * 100
+        if drop_pct >= 2:
+            flags.append({"level": "warning",
+                "text": f"Posible deshidratación: tu peso de hoy ({weight_last:.1f} kg) está {drop_pct:.1f}% por debajo "
+                        f"de tu promedio de la semana ({weight7:.1f} kg). Por encima del 2% ya cae el rendimiento (ACSM). "
+                        "Rehidratá con agua + sales y controlá el color de la orina."})
+
+    # 8) Hidratación registrada por debajo de la meta
+    if hydration_ml is not None and hydration_ml > 0 and hydration_ml < 2000:
+        flags.append({"level": "info",
+            "text": f"Tomaste {hydration_ml/1000:.1f} L registrados hoy, por debajo de tu meta de 3 L. Sumá líquidos."})
+
+    # ---------- sugerencias de hidratación (siempre visibles, contextuales)
+    suggestions = [
+        "Meta: 3 L de agua en el día; más en días de calor o de fondo largo.",
+        "Control de orina: amarillo pálido = bien hidratado; oscura = tomá 250-500 mL y esperá 20 min.",
+    ]
+    if yesterday_load is not None and yesterday_load >= 100:
+        suggestions.append("Ayer fue día de carga alta: reponé líquidos Y sales hoy (isotónica o agua con una pizca de sal y limón).")
+    if hydration_ml is not None and hydration_ml >= 3000:
+        suggestions.insert(0, f"✅ Vas bien: {hydration_ml/1000:.1f} L registrados hoy.")
+
+    return {"flags": flags, "suggestions": suggestions}
 
 
 def make_plan(tsb, acwr, acute, chronic, hrv_today, hrv30, sleep_secs,
