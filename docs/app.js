@@ -1,6 +1,6 @@
 // Dashboard estático: lee data.json (generado por GitHub Actions) y renderiza.
 
-const $ = (id) => document.getElementById(id);
+const $ = (id) => document.getElementById(id) || { };  // nunca null: evita que un id faltante rompa toda la página
 
 const KIND_EMOJI = {
   descanso: "😴", suave: "🟢", resistencia: "🚴", tempo: "🟡", intensidad: "🔥",
@@ -220,4 +220,8 @@ function renderLoadChart(series) {
   });
 }
 
-init();
+init().catch((err) => {
+  console.error("Error al renderizar el dashboard:", err);
+  const u = document.getElementById("updated");
+  if (u) u.textContent = "Error al mostrar los datos (recargá la página)";
+});
