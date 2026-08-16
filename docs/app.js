@@ -64,6 +64,38 @@ async function init() {
   $("health-suggestions").innerHTML = (health.suggestions || [])
     .map((s) => `<li>${s}</li>`).join("");
 
+  const q = data.quality || {};
+  const qb = $("quality-body");
+  if (qb) {
+    let html = "";
+    const pol = q.polarization;
+    if (pol) {
+      const okPolar = pol.low_pct >= 75 && pol.high_pct <= 25;
+      html += `<div class="step"><strong>Distribución de intensidad (7 días):</strong>
+        suave ${pol.low_pct}% · medio ${pol.mid_pct}% · duro ${pol.high_pct}%.
+        ${okPolar ? "✅ Reparto polarizado (~80/20), como los de élite (Seiler)."
+                  : "⚠️ Alejado del 80/20: demasiado tiempo en intensidad media/alta. Sumá más Z2 suave."}</div>`;
+    } else {
+      html += `<div class="step"><strong>Distribución de intensidad:</strong> sin datos de tiempo en zonas todavía.</div>`;
+    }
+    if (q.monotony != null) {
+      const risky = q.monotony > 2;
+      html += `<div class="step"><strong>Monotonía (Foster):</strong> ${q.monotony}
+        ${risky ? "🟠 Alta (>2): tu carga es muy repetitiva, sube el riesgo de enfermedad/sobreentrenamiento. Variá días duros y suaves."
+                : "✅ Buena variación día a día."}
+        · <strong>Strain:</strong> ${q.strain ?? "—"} (carga semanal ${q.week_load ?? "—"} TSS).</div>`;
+    }
+    const dc = q.decoupling;
+    if (dc) {
+      const good = dc.value < 5;
+      html += `<div class="step"><strong>Desacople aeróbico (última salida larga):</strong> ${dc.value}%
+        ${good ? "✅ <5%: buena base aeróbica y durabilidad."
+               : "⚠️ >5%: se te desacopla el pulso en salidas largas (fatiga, deshidratación o falta de base). Más fondo en Z2."}
+        <span class="tile-sub">(${dc.name || ""}, ${dc.date || ""})</span></div>`;
+    }
+    qb.innerHTML = html || `<p class="hint">Juntando datos para las métricas de calidad.</p>`;
+  }
+
   const TESTS = [
     ["Umbral 30 min (Friel)", "Tu FC de umbral (LTHR) y recalibra tus zonas. El patrón oro de campo."],
     ["20 min (umbral)", "Versión más corta del test de umbral, algo menos precisa."],

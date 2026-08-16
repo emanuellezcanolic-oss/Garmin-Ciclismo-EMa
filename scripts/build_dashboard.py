@@ -89,6 +89,68 @@ def upsert_workout(plan):
         return {"status": "error", "detail": str(e)}
 
 
+def training_quality(activities, load_by_day):
+    """Métricas de calidad basadas en evidencia (con FC, sin potenciómetro):
+    - Distribución de intensidad / polarización (Seiler ~80/20)
+    - Monotonía y Strain de Foster (riesgo de enfermedad/sobreentrenamiento)
+    - Desacople aeróbico de la última salida larga (durabilidad; TrainingPeaks)
+    """
+    from statistics import pstdev
+
+    # ---- distribución de zonas de FC, últimos 7 días
+    cutoff = (TODAY - timedelta(days=6)).isoformat()
+    low = mid = high = 0.0
+    zt_found = False
+    for a in activities:
+        if (a.get("type") not in CYCLING_TYPES):
+            continue
+        if (a.get("start_date_local") or "")[:10] < cutoff:
+            continue
+        zt = a.get("icu_hr_zone_times") or a.get("hr_zone_times") or a.get("icu_zone_times")
+        if isinstance(zt, list) and zt:
+            zt_found = True
+            low += sum(zt[:2])
+            mid += zt[2] if len(zt) > 2 else 0
+            high += sum(zt[3:]) if len(zt) > 3 else 0
+    polar = None
+    if zt_found and (low + mid + high) > 0:
+        tot = low + mid + high
+        polar = {
+            "low_pct": round(low / tot * 100),
+            "mid_pct": round(mid / tot * 100),
+            "high_pct": round(high / tot * 100),
+        }
+
+    # ---- monotonía y strain de Foster, últimos 7 días
+    loads = [load_by_day.get((TODAY - timedelta(days=i)).isoformat(), 0.0) for i in range(7)]
+    week_load = sum(loads)
+    mean = week_load / 7
+    sd = pstdev(loads) if len(loads) > 1 else 0
+    monotony = round(mean / sd, 2) if sd > 0 else None
+    strain = round(week_load * monotony) if monotony else None
+
+    # ---- desacople aeróbico de la última salida larga (>60 min)
+    decoupling = None
+    for a in sorted(activities, key=lambda x: x.get("start_date_local") or "", reverse=True):
+        if a.get("type") not in CYCLING_TYPES:
+            continue
+        if (a.get("moving_time") or 0) < 3600:
+            continue
+        d = a.get("decoupling")
+        if isinstance(d, (int, float)):
+            decoupling = {"value": round(d, 1), "name": a.get("name"),
+                          "date": (a.get("start_date_local") or "")[:10]}
+            break
+
+    return {
+        "polarization": polar,
+        "monotony": monotony,
+        "strain": strain,
+        "week_load": round(week_load),
+        "decoupling": decoupling,
+    }
+
+
 def estimate_lthr(rides):
     """Estima el umbral de FC (LTHR) desde la última salida.
 
@@ -378,6 +440,18 @@ def build(wellness, activities, athlete):
     lthr_est = estimate_lthr(rides)
     if lthr_est:
         print(f"LTHR estimado: {json.dumps(lthr_est, ensure_ascii=False)}")
+    quality = training_quality(activities, load_by_day)
+    print(f"Calidad: {json.dumps(quality, ensure_ascii=False)}")
+
+    # ---- sonda DFA a1: ¿el reloj graba intervalos latido a latido (RR)?
+    if rides:
+        try:
+            probe = get(f"/activity/{rides[0]['id']}/streams", types="hrv")
+            types = [s.get("type") for s in probe] if isinstance(probe, list) else []
+            has_rr = any(t in ("hrv", "rr", "rrIntervals") for t in types)
+            print(f"DFA a1 probe: tipos disponibles={types} | RR presente={has_rr}")
+        except Exception as e:
+            print(f"DFA a1 probe: sin datos RR ({e})")
 
     # ---------- alertas
     alerts = []
@@ -419,6 +493,7 @@ def build(wellness, activities, athlete):
         }),
         "health": health,
         "lthr": lthr_est,
+        "quality": quality,
         "alerts": alerts,
         "series": series,
         "rides": rides[:60],
