@@ -303,4 +303,19 @@ details summary:hover { color: var(--accent); }
 details ul { margin: 10px 0 0; padding-left: 20px; color: var(--muted); }
 details li { margin: 5px 0; }
 
+/* ---------------- base científica ---------------- */
+.ev-group { margin-top: 16px; }
+.ev-cat {
+  font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--accent-2); margin-bottom: 8px; padding-bottom: 5px; border-bottom: 1px solid var(--line);
+}
+.ev-item {
+  padding: 10px 13px; margin: 8px 0; border-radius: 10px;
+  background: rgba(255,255,255,0.02); border: 1px solid var(--line); border-left: 2px solid var(--accent);
+}
+.ev-title { font-family: var(--mono); font-weight: 600; font-size: 0.9rem; color: #fff; }
+.ev-src { font-size: 0.72rem; color: var(--accent-2); margin-left: 8px; }
+.ev-text { font-size: 0.84rem; color: var(--muted); margin: 5px 0 0; }
+#plan-evidence .ev-item { border-left-color: var(--accent-2); }
+
 .footer-note { color: var(--faint); font-size: 0.76rem; text-align: center; margin-top: 22px; }

@@ -146,6 +146,17 @@ async function init() {
     extra += `<details><summary>🍽️ Nutrición de hoy</summary><ul>` + p.nutrition.map((n) => `<li>${n}</li>`).join("") + `</ul></details>`;
   $("plan-extra").innerHTML = extra;
 
+  // evidencia que respalda la sesión de hoy
+  const pev = p.evidencia || [];
+  if (pev.length) {
+    $("plan-evidence").innerHTML = pev.map((e) =>
+      `<div class="ev-item"><span class="ev-title">${e.titulo}</span>
+        <span class="ev-src">${e.fuente}</span>
+        <p class="ev-text">${e.principio}</p></div>`).join("");
+  } else {
+    $("plan-evidence-wrap").style.display = "none";
+  }
+
   // ---- gauge + semáforo
   renderFormGauge(t.tsb);
   $("form-note").textContent = t.tsb == null ? "" :
@@ -224,6 +235,21 @@ async function init() {
 
   // ---- tests (tiles que abren un issue pre-cargado)
   renderTests();
+
+  // ---- base científica
+  const eb = $("evidence-body");
+  const groups = data.evidencia || [];
+  if (eb && groups.length) {
+    eb.innerHTML = groups.map((g) =>
+      `<div class="ev-group"><div class="ev-cat">${g.cat}</div>` +
+      g.items.map((e) =>
+        `<div class="ev-item"><span class="ev-title">${e.titulo}</span>
+          <span class="ev-src">${e.fuente}</span>
+          <p class="ev-text">${e.principio}</p></div>`).join("") +
+      `</div>`).join("");
+  } else if (eb) {
+    eb.innerHTML = `<p class="hint">Base de evidencia cargándose.</p>`;
+  }
 
   // ---- objetivos
   $("goals-body").innerHTML = (data.goals || [])

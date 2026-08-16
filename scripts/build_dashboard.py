@@ -12,6 +12,8 @@ from datetime import date, datetime, timedelta, timezone
 
 import requests
 
+from evidencia import evidencia_para_plan, evidencia_agrupada
+
 API = "https://intervals.icu/api/v1"
 ATHLETE = os.environ.get("ATHLETE_ID", "i650204")
 KEY = os.environ["INTERVALS_API_KEY"]
@@ -445,6 +447,7 @@ def build(wellness, activities, athlete):
     )
     plan["route"] = suggest_route(plan, rides)
     plan["nutrition"] = nutrition_tips(plan["kind"])
+    plan["evidencia"] = evidencia_para_plan(plan["kind"])
     lthr_est = estimate_lthr(rides)
     if lthr_est:
         print(f"LTHR estimado: {json.dumps(lthr_est, ensure_ascii=False)}")
@@ -526,6 +529,7 @@ def build(wellness, activities, athlete):
         "quality": quality,
         "subjective": subjective,
         "alerts": alerts,
+        "evidencia": evidencia_agrupada(),
         "series": series,
         "rides": rides[:60],
         "counts": {"rides_180d": len(rides), "wellness_days": len(days)},
