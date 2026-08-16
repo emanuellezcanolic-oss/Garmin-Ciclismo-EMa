@@ -3,55 +3,134 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Entrenador de Ciclismo — Emanuel</title>
-  <link rel="stylesheet" href="style.css?v=9">
+  <meta name="theme-color" content="#0d1016">
+  <title>Pelotón · Entrenador de Ciclismo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=10">
 </head>
 <body>
-  <header>
-    <h1>🚵 Entrenador de Ciclismo</h1>
-    <div id="updated" class="badge">cargando…</div>
+  <div class="grain" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">
+        <svg viewBox="0 0 32 32" width="30" height="30"><path d="M16 3 L28 27 H4 Z" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/><circle cx="16" cy="20" r="3.4" fill="currentColor"/></svg>
+      </span>
+      <div>
+        <h1>PELOTÓN</h1>
+        <p class="tagline">Entrenador de ciclismo · Emanuel</p>
+      </div>
+    </div>
+    <div class="top-right">
+      <span id="form-pill" class="pill">—</span>
+      <span id="updated" class="badge">cargando…</span>
+    </div>
   </header>
 
   <main>
-    <section class="card" id="plan-card">
-      <h2 id="plan-title">Plan de hoy</h2>
-      <div id="plan-steps"></div>
-      <div id="plan-extra"></div>
-      <details>
-        <summary>¿Por qué este entreno? (justificación con tus datos)</summary>
-        <ul id="plan-why"></ul>
-      </details>
+    <!-- ===================== HERO ===================== -->
+    <section class="hero reveal">
+      <article class="card plan-card" id="plan-card">
+        <div class="card-eyebrow"><span id="plan-kind-tag" class="kind-tag">plan</span> Sesión de hoy</div>
+        <h2 id="plan-title">Plan de hoy</h2>
+        <div id="plan-steps"></div>
+        <div id="plan-extra"></div>
+        <details>
+          <summary>¿Por qué este entreno? (justificación con tus datos)</summary>
+          <ul id="plan-why"></ul>
+        </details>
+      </article>
+
+      <aside class="hero-side">
+        <div class="card gauge-card">
+          <div class="card-eyebrow">Forma de hoy</div>
+          <div id="form-gauge"></div>
+          <p class="gauge-note" id="form-note"></p>
+        </div>
+        <div class="card semaphore-card" id="ot-card">
+          <div class="card-eyebrow">Semáforo de recuperación</div>
+          <div class="semaphore-head">
+            <span class="sem-light" id="ot-light"></span>
+            <p id="ot-summary">Juntando señales…</p>
+          </div>
+          <div id="ot-items" class="ot-items"></div>
+        </div>
+      </aside>
     </section>
 
-    <section class="card" id="health-card">
+    <!-- ===================== KPI STRIP ===================== -->
+    <section class="metric-strip reveal" id="load-tiles"></section>
+
+    <!-- ===================== LOAD CHART ===================== -->
+    <section class="card reveal">
+      <div class="card-head">
+        <h2>Carga de entrenamiento · 120 días</h2>
+        <button type="button" id="toggle-load-table" class="linklike">Ver tabla</button>
+      </div>
+      <div id="alerts"></div>
+      <div class="legend">
+        <span class="legend-item"><span class="dot dot-ctl"></span>Fitness (CTL)</span>
+        <span class="legend-item"><span class="dot dot-atl"></span>Fatiga (ATL)</span>
+        <span class="legend-item"><span class="dot dot-tsb"></span>Forma (TSB)</span>
+      </div>
+      <div id="load-chart"></div>
+      <div class="table-wrap hidden" id="load-table-wrap">
+        <table>
+          <thead><tr><th>Fecha</th><th>Carga día</th><th>CTL</th><th>ATL</th><th>TSB</th></tr></thead>
+          <tbody id="load-table-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===================== CALIDAD ===================== -->
+    <section class="card reveal">
+      <h2>Calidad del entrenamiento</h2>
+      <div class="polar-block">
+        <div class="polar-caption">
+          <span>Distribución de intensidad · 7 días</span>
+          <span id="polar-verdict" class="polar-verdict"></span>
+        </div>
+        <div id="polar-bar" class="polar-bar"></div>
+        <div class="polar-legend">
+          <span><span class="sw sw-low"></span>Suave (Z1–Z2)</span>
+          <span><span class="sw sw-mid"></span>Medio (Z3)</span>
+          <span><span class="sw sw-high"></span>Duro (Z4–Z5)</span>
+          <span class="polar-target">▲ objetivo 80% suave</span>
+        </div>
+      </div>
+      <div id="quality-body"></div>
+    </section>
+
+    <!-- ===================== SALUD ===================== -->
+    <section class="card reveal">
       <h2>🩺 Señales de salud e hidratación</h2>
       <div id="health-flags"></div>
-      <ul id="health-suggestions" class="hint"></ul>
+      <ul id="health-suggestions" class="hint-list"></ul>
     </section>
 
-    <section class="card" id="lthr-card">
+    <!-- ===================== LTHR ===================== -->
+    <section class="card reveal">
       <h2>❤️ Umbral de FC (LTHR) y zonas</h2>
       <div id="lthr-body"></div>
     </section>
 
-    <section class="card" id="quality-card">
-      <h2>📊 Calidad del entrenamiento</h2>
-      <div id="quality-body"></div>
+    <!-- ===================== TESTS ===================== -->
+    <section class="card reveal" id="tests-card">
+      <div class="card-head">
+        <h2>🧪 Tests de condición física</h2>
+        <label class="date-pick">Fecha
+          <input type="date" id="test-date">
+        </label>
+      </div>
+      <p class="hint">Elegí un test validado y tocá <b>Cargar al reloj</b>: se abre GitHub con un aviso ya escrito, confirmás con <b>“Submit new issue”</b> y en minutos aparece el test en tu Garmin. Cuando lo completás, el sistema recalibra tus zonas.</p>
+      <div id="tests-grid" class="tests-grid"></div>
     </section>
 
-    <section class="card" id="tests-card">
-      <h2>🧪 Tests de condición física</h2>
-      <p class="hint">Elegí un test validado y se carga solo en tu Garmin (aparece en el reloj para seguirlo). Cuando lo completás, el sistema lo usa para recalibrar tus zonas y ajustar el plan.</p>
-      <div id="tests-list"></div>
-      <a id="tests-launch" class="btn-link" target="_blank"
-         href="https://github.com/emanuellezcanolic-oss/Garmin-Ciclismo-EMa/actions/workflows/cargar_test.yml">
-        ▶️ Cargar un test a mi reloj
-      </a>
-      <p class="hint" style="margin-top:8px">Se abre GitHub → botón gris <b>"Run workflow"</b> → elegí el test y la fecha → <b>Run</b>. En minutos aparece en tu Garmin.</p>
-    </section>
-
-    <section class="card">
-      <h2>🎯 Objetivos (12 semanas)</h2>
+    <!-- ===================== OBJETIVOS ===================== -->
+    <section class="card reveal">
+      <h2>🎯 Objetivos · 12 semanas</h2>
       <div class="table-wrap">
         <table>
           <thead><tr><th>Métrica</th><th>Hoy</th><th>Objetivo</th><th>Fecha</th><th>Cómo</th></tr></thead>
@@ -60,31 +139,14 @@
       </div>
     </section>
 
-    <section class="card">
-      <h2>Carga de entrenamiento</h2>
-      <div id="alerts"></div>
-      <div class="tiles" id="load-tiles"></div>
-      <div class="viz-root">
-        <div class="chart-head">
-          <div class="legend">
-            <span class="legend-item"><span class="dot dot-ctl"></span>Fitness (CTL)</span>
-            <span class="legend-item"><span class="dot dot-atl"></span>Fatiga (ATL)</span>
-            <span class="legend-item"><span class="dot dot-tsb"></span>Forma (TSB)</span>
-          </div>
-          <button type="button" id="toggle-load-table" class="linklike">Ver tabla</button>
-        </div>
-        <div id="load-chart"></div>
-        <div class="table-wrap hidden" id="load-table-wrap">
-          <table>
-            <thead><tr><th>Fecha</th><th>Carga día</th><th>CTL</th><th>ATL</th><th>TSB</th></tr></thead>
-            <tbody id="load-table-body"></tbody>
-          </table>
-        </div>
-      </div>
+    <!-- ===================== TENDENCIAS ===================== -->
+    <section class="card reveal">
+      <h2>Tendencias fisiológicas</h2>
       <div class="tiles" id="trend-tiles"></div>
     </section>
 
-    <section class="card">
+    <!-- ===================== SALIDAS ===================== -->
+    <section class="card reveal">
       <h2>Últimas salidas</h2>
       <div class="table-wrap">
         <table>
@@ -97,9 +159,9 @@
       </div>
     </section>
 
-    <p class="hint" id="footer-note"></p>
+    <p class="footer-note" id="footer-note"></p>
   </main>
 
-  <script src="app.js?v=9"></script>
+  <script src="app.js?v=10"></script>
 </body>
 </html>
