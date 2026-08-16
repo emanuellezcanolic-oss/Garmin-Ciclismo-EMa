@@ -431,20 +431,28 @@ def build(wellness, activities, athlete):
                             stress3, stress7, sleep3, tsb_now,
                             weight_last, weight7, hydration_today, day_load(1))
 
+    # ---------- calidad (se calcula antes del plan para respetar el 80/20)
+    quality = training_quality(activities, load_by_day)
+    print(f"Calidad: {json.dumps(quality, ensure_ascii=False)}")
+
     # ---------- plan del día (fase 3: decisión basada en datos)
     plan = make_plan(
         tsb=tsb_now, acwr=acwr, acute=acute, chronic=chronic,
         hrv_today=hrv_today, hrv30=hrv30, sleep_secs=sleep_today,
         sleep_score=sleep_score_today, readiness=readiness_today,
         load_recent=[day_load(i) for i in range(7)],
+        polar=quality.get("polarization"),
     )
     plan["route"] = suggest_route(plan, rides)
     plan["nutrition"] = nutrition_tips(plan["kind"])
     lthr_est = estimate_lthr(rides)
     if lthr_est:
         print(f"LTHR estimado: {json.dumps(lthr_est, ensure_ascii=False)}")
-    quality = training_quality(activities, load_by_day)
-    print(f"Calidad: {json.dumps(quality, ensure_ascii=False)}")
+
+    # ---------- checklist de sobreentrenamiento (semáforo)
+    overtraining = overtraining_check(
+        rhr3, rhr30, hrv3, hrv30, tsb_now, quality.get("monotony"), acwr, sleep3)
+    print(f"Sobreentrenamiento: {json.dumps(overtraining, ensure_ascii=False)}")
 
     # ---- carga subjetiva (sRPE) desde el RPE/Feel que cargás en el reloj
     rpe_rides = [r for r in rides if r.get("rpe") and r.get("moving_time_s")]
@@ -513,6 +521,7 @@ def build(wellness, activities, athlete):
             "ctl": ctl_now, "vo2max": vo2_last, "weight": weight_last,
         }),
         "health": health,
+        "overtraining": overtraining,
         "lthr": lthr_est,
         "quality": quality,
         "subjective": subjective,
@@ -678,8 +687,93 @@ def health_signals(rhr3, rhr30, rhr_last, hrv3, hrv30, stress3, stress7,
     return {"flags": flags, "suggestions": suggestions}
 
 
+def overtraining_check(rhr3, rhr30, hrv3, hrv30, tsb, monotony, acwr, sleep3_secs):
+    """Semáforo de sobreentrenamiento: junta las señales validadas de monitoreo
+    de carga en un tablero único (verde/ámbar/rojo). No diagnostica: resume si
+    el cuerpo está asimilando bien o pidiendo freno.
+
+    Cada ítem: 0 = ok (verde), 1 = atención (ámbar), 2 = alerta (rojo).
+    Umbrales de la literatura de monitoreo (FC reposo, HRV, TSB, monotonía de
+    Foster, ACWR de Gabbett, sueño)."""
+    items = []
+
+    def add(label, level, detail):
+        items.append({"label": label, "level": level, "detail": detail})
+
+    # 1) FC en reposo vs baseline
+    if rhr3 is not None and rhr30 is not None:
+        d = rhr3 - rhr30
+        if d >= 10:
+            add("FC en reposo", 2, f"+{d:.0f} lpm sobre tu baseline ({rhr3:.0f} vs {rhr30:.0f}). Muy elevada.")
+        elif d >= 5:
+            add("FC en reposo", 1, f"+{d:.0f} lpm sobre tu baseline ({rhr3:.0f} vs {rhr30:.0f}). Algo alta.")
+        else:
+            add("FC en reposo", 0, f"En rango ({rhr3:.0f} vs baseline {rhr30:.0f} lpm).")
+
+    # 2) HRV vs baseline
+    if hrv3 and hrv30 and hrv30 > 0:
+        pct = (hrv3 - hrv30) / hrv30 * 100
+        if pct <= -10:
+            add("HRV", 2, f"{abs(pct):.0f}% por debajo de tu baseline ({hrv3:.0f} vs {hrv30:.0f} ms). Recuperación comprometida.")
+        elif pct <= -5:
+            add("HRV", 1, f"{abs(pct):.0f}% por debajo de tu baseline ({hrv3:.0f} vs {hrv30:.0f} ms).")
+        else:
+            add("HRV", 0, f"En rango ({hrv3:.0f} vs baseline {hrv30:.0f} ms).")
+
+    # 3) TSB (forma / fatiga acumulada)
+    if tsb is not None:
+        if tsb < -30:
+            add("Forma (TSB)", 2, f"{tsb:.0f}: fatiga acumulada muy alta.")
+        elif tsb < -20:
+            add("Forma (TSB)", 1, f"{tsb:.0f}: venís bastante cargado.")
+        else:
+            add("Forma (TSB)", 0, f"{tsb:.0f}: fatiga bajo control.")
+
+    # 4) Monotonía de Foster (variación día a día)
+    if monotony is not None:
+        if monotony > 2:
+            add("Monotonía", 2, f"{monotony}: carga muy repetitiva (>2). Sube el riesgo de enfermedad.")
+        elif monotony >= 1.5:
+            add("Monotonía", 1, f"{monotony}: poca variación entre días (1.5–2).")
+        else:
+            add("Monotonía", 0, f"{monotony}: buena alternancia de días duros y suaves.")
+
+    # 5) ACWR (aguda/crónica, Gabbett)
+    if acwr is not None:
+        if acwr > 1.5:
+            add("Carga (ACWR)", 2, f"{acwr}: subiste la carga demasiado rápido (>1.5).")
+        elif acwr > 1.3:
+            add("Carga (ACWR)", 1, f"{acwr}: zona de precaución (1.3–1.5).")
+        else:
+            add("Carga (ACWR)", 0, f"{acwr}: progresión de carga segura.")
+
+    # 6) Sueño (promedio 3 días)
+    if sleep3_secs is not None:
+        h = sleep3_secs / 3600
+        if h < 6:
+            add("Sueño", 2, f"{h:.1f} h de promedio (3 días): insuficiente para recuperar.")
+        elif h < 7:
+            add("Sueño", 1, f"{h:.1f} h de promedio: un poco justo.")
+        else:
+            add("Sueño", 0, f"{h:.1f} h de promedio: bien.")
+
+    reds = sum(1 for i in items if i["level"] == 2)
+    ambers = sum(1 for i in items if i["level"] == 1)
+    if reds >= 2:
+        level, summary = "red", "Varias señales en rojo: el cuerpo pide freno. 2–3 días muy suaves y revisá sueño e hidratación."
+    elif reds == 1 or ambers >= 2:
+        level, summary = "amber", "Algunas señales pidiendo atención. Bajá un cambio hoy y priorizá recuperación."
+    elif not items:
+        level, summary = "amber", "Todavía sin datos suficientes para el semáforo (faltan FC reposo/HRV/sueño)."
+    else:
+        level, summary = "green", "Todas las señales en verde: estás asimilando bien la carga. Vía libre para entrenar."
+
+    return {"level": level, "summary": summary, "items": items,
+            "reds": reds, "ambers": ambers}
+
+
 def make_plan(tsb, acwr, acute, chronic, hrv_today, hrv30, sleep_secs,
-              sleep_score, readiness, load_recent):
+              sleep_score, readiness, load_recent, polar=None):
     """Decide el entreno de hoy y lo justifica con los números."""
     # Sin historial suficiente no se recomienda nada: sería inventar.
     if not chronic or chronic <= 0:
@@ -843,6 +937,32 @@ def make_plan(tsb, acwr, acute, chronic, hrv_today, hrv30, sleep_secs,
             {"phase": "Vuelta a la calma", "desc": "10 min en Z1."},
         ]
         est = 70
+
+    # ---- guardarraíl de polarización 80/20 (Seiler): si ya gastaste el
+    # presupuesto de intensidad de la semana, hoy toca Z2 aunque estés fresco.
+    if kind in ("intensidad", "tempo") and polar and polar.get("high_pct", 0) >= 30:
+        why.append(f"Ya llevás {polar['high_pct']}% del tiempo de la semana en intensidad alta "
+                   "(la referencia polarizada es ~20% o menos). Cambio el día de calidad por "
+                   "fondo Z2: así protejo el 80/20 y llegás fresco a la próxima sesión dura.")
+        kind = "resistencia"
+        title = "Fondo aeróbico Z2 (protegiendo el 80/20)"
+        steps = [
+            {"phase": "Calentamiento", "desc": "15 min progresivos Z1 → Z2."},
+            {"phase": "Bloque principal", "desc": "60–90 min en Z2 sostenida, sin picos. Respiración cómoda: tenés que poder hablar de corrido."},
+            {"phase": "Vuelta a la calma", "desc": "10 min en Z1."},
+        ]
+        est = 75
+
+    # ---- drills de cadencia opcionales en días de base (mejora economía;
+    # suman técnica sin casi carga). La evidencia para cadencia baja es débil
+    # (Hansen 2020), así que el foco es cadencia ALTA y pedaleo redondo.
+    if kind in ("resistencia", "suave"):
+        steps = steps + [{
+            "phase": "Opcional — técnica de cadencia",
+            "desc": ("Dentro del bloque suave, sumá 4 × (1 min a cadencia alta 100–110 rpm, "
+                     "pedaleo redondo sin rebotar en el asiento / 2 min a cadencia normal). "
+                     "Mejora la soltura y la economía; casi no agrega carga."),
+        }]
 
     if budget is not None and est > budget and kind in ("intensidad", "tempo", "resistencia"):
         why.append(f"El entreno se acorta para respetar el presupuesto de ~{budget:.0f} TSS.")
