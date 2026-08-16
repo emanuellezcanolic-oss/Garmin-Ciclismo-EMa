@@ -93,6 +93,15 @@ async function init() {
                : "⚠️ >5%: se te desacopla el pulso en salidas largas (fatiga, deshidratación o falta de base). Más fondo en Z2."}
         <span class="tile-sub">(${dc.name || ""}, ${dc.date || ""})</span></div>`;
     }
+    const sj = data.subjective;
+    if (sj && sj.rpe_filled) {
+      html += `<div class="step"><strong>Sensaciones (del reloj):</strong>
+        cargás el esfuerzo percibido en ${sj.rpe_filled}/${sj.rpe_total} salidas ✅.
+        Última: RPE ${sj.last_rpe}/10 (${sj.last_date}).
+        Carga subjetiva 7 días (sRPE): ${sj.srpe_7d ?? "—"}. Cruza con tu carga por pulso para detectar fatiga oculta.</div>`;
+    } else if (sj) {
+      html += `<div class="step"><strong>Sensaciones (del reloj):</strong> todavía no venís cargando el esfuerzo percibido (RPE) al terminar. Si lo marcás en el reloj, lo uso automáticamente.</div>`;
+    }
     qb.innerHTML = html || `<p class="hint">Juntando datos para las métricas de calidad.</p>`;
   }
 
