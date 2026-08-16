@@ -64,6 +64,17 @@ async function init() {
   $("health-suggestions").innerHTML = (health.suggestions || [])
     .map((s) => `<li>${s}</li>`).join("");
 
+  const TESTS = [
+    ["Umbral 30 min (Friel)", "Tu FC de umbral (LTHR) y recalibra tus zonas. El patrón oro de campo."],
+    ["20 min (umbral)", "Versión más corta del test de umbral, algo menos precisa."],
+    ["5 min máximo", "Capacidad aeróbica máxima (proxy de VO2máx)."],
+    ["Cooper 12 min", "VO2máx estimado por la distancia en 12 min. En terreno llano."],
+    ["Recuperación de FC (HRR)", "Cuánto baja tu pulso en 1 min tras un esfuerzo duro: marcador de forma."],
+  ];
+  const tl = $("tests-list");
+  if (tl) tl.innerHTML = TESTS.map(
+    ([n, d]) => `<div class="step"><strong>${n}:</strong> ${d}</div>`).join("");
+
   const lthr = data.lthr || null;
   if (!lthr) {
     $("lthr-body").innerHTML = `<p class="hint">Todavía no hay salidas para estimar el umbral.</p>`;

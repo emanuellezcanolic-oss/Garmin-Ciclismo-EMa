@@ -1,0 +1,38 @@
+name: Cargar test
+
+on:
+  workflow_dispatch:
+    inputs:
+      test:
+        description: "¿Qué test querés cargar al reloj?"
+        type: choice
+        required: true
+        default: lthr_30
+        options:
+          - lthr_30
+          - test_20
+          - test_5
+          - cooper_12
+          - hrr
+      fecha:
+        description: "Fecha (YYYY-MM-DD). Vacío = mañana."
+        type: string
+        required: false
+        default: ""
+
+jobs:
+  cargar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests
+      - name: Cargar test en Garmin
+        env:
+          INTERVALS_API_KEY: ${{ secrets.INTERVALS_API_KEY }}
+          ATHLETE_ID: i650204
+          TEST: ${{ inputs.test }}
+          FECHA: ${{ inputs.fecha }}
+        run: python scripts/load_test.py

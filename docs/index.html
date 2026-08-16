@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Entrenador de Ciclismo — Emanuel</title>
-  <link rel="stylesheet" href="style.css?v=3">
+  <link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
   <header>
@@ -32,6 +32,17 @@
     <section class="card" id="lthr-card">
       <h2>❤️ Umbral de FC (LTHR) y zonas</h2>
       <div id="lthr-body"></div>
+    </section>
+
+    <section class="card" id="tests-card">
+      <h2>🧪 Tests de condición física</h2>
+      <p class="hint">Elegí un test validado y se carga solo en tu Garmin (aparece en el reloj para seguirlo). Cuando lo completás, el sistema lo usa para recalibrar tus zonas y ajustar el plan.</p>
+      <div id="tests-list"></div>
+      <a id="tests-launch" class="btn-link" target="_blank"
+         href="https://github.com/emanuellezcanolic-oss/Garmin-Ciclismo-EMa/actions/workflows/cargar_test.yml">
+        ▶️ Cargar un test a mi reloj
+      </a>
+      <p class="hint" style="margin-top:8px">Se abre GitHub → botón gris <b>"Run workflow"</b> → elegí el test y la fecha → <b>Run</b>. En minutos aparece en tu Garmin.</p>
     </section>
 
     <section class="card">
@@ -84,6 +95,6 @@
     <p class="hint" id="footer-note"></p>
   </main>
 
-  <script src="app.js?v=3"></script>
+  <script src="app.js?v=4"></script>
 </body>
 </html>
