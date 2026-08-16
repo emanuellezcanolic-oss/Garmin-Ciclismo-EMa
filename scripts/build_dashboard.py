@@ -153,11 +153,15 @@ def estimate_lthr(rides):
         return {"error": "la salida dura menos de 20 minutos; no alcanza para el test"}
 
     lthr = round(best20)
+    # icu_intensity viene como porcentaje (IF×100): ~90 = esfuerzo duro
     note = ("Estimado desde una salida pareja (no un test máximo formal): tomalo como piso. "
             "Para el valor exacto, hacé el test de 30 min a tope.")
-    if intensity is not None and intensity < 0.75:
+    if intensity is not None and intensity < 75:
         note = ("⚠️ Esta salida fue de intensidad baja (más bien Z2): no sirve para estimar el umbral. "
-                "El número de abajo casi seguro subestima tu LTHR real. Hacé el test de 30 min a tope.")
+                "El número casi seguro subestima tu LTHR real. Hacé el test de 30 min a tope.")
+    elif intensity is not None and intensity >= 85:
+        note = (f"Salida exigente (IF {intensity:.0f}%): el estimado es confiable, muy cerca de tu LTHR real. "
+                "Podés confirmarlo con el test de 30 min a tope cuando quieras.")
 
     # zonas de FC de Friel a partir del LTHR
     zones = {
