@@ -89,6 +89,92 @@ def upsert_workout(plan):
         return {"status": "error", "detail": str(e)}
 
 
+def estimate_lthr(rides):
+    """Estima el umbral de FC (LTHR) desde la última salida.
+
+    Baja la serie de pulso y calcula el mejor promedio sostenido de 20 min
+    (proxy del LTHR de Friel = FC media de los últimos 20 min de un test
+    máximo de 30 min). Sólo es válido si la salida fue un esfuerzo duro y
+    parejo; si fue suave, lo indica.
+    """
+    if not rides:
+        return None
+    r = rides[0]
+    aid = r.get("id")
+    try:
+        streams = get(f"/activity/{aid}/streams", types="time,heartrate")
+    except Exception as e:
+        print(f"LTHR: no pude bajar streams de {aid}: {e}")
+        return {"error": "no pude leer la serie de pulso de la última salida"}
+
+    hr, tm = None, None
+    if isinstance(streams, list):
+        for s in streams:
+            if s.get("type") == "heartrate":
+                hr = s.get("data")
+            elif s.get("type") == "time":
+                tm = s.get("data")
+    if not hr:
+        return {"error": "la última salida no tiene datos de frecuencia cardíaca"}
+
+    hr = [h for h in hr if isinstance(h, (int, float)) and h > 0]
+    n = len(hr)
+    if n < 300:
+        return {"error": "la última salida es demasiado corta para estimar el umbral"}
+
+    # frecuencia de muestreo: por defecto 1 Hz; si hay tiempo, la deduzco
+    dt = 1.0
+    if tm and len(tm) >= 2:
+        diffs = [tm[i + 1] - tm[i] for i in range(min(len(tm), n) - 1) if tm[i + 1] > tm[i]]
+        if diffs:
+            diffs.sort()
+            dt = diffs[len(diffs) // 2] or 1.0
+
+    def best_window(minutes):
+        w = max(1, int(minutes * 60 / dt))
+        if n < w:
+            return None
+        # media móvil con suma acumulada -> O(n)
+        s = sum(hr[:w])
+        best = s
+        for i in range(w, n):
+            s += hr[i] - hr[i - w]
+            if s > best:
+                best = s
+        return best / w
+
+    best20 = best_window(20)
+    best30 = best_window(30)
+    avg = sum(hr) / n
+    hmax = max(hr)
+    intensity = r.get("intensity")
+
+    if best20 is None:
+        return {"error": "la salida dura menos de 20 minutos; no alcanza para el test"}
+
+    lthr = round(best20)
+    note = ("Estimado desde una salida pareja (no un test máximo formal): tomalo como piso. "
+            "Para el valor exacto, hacé el test de 30 min a tope.")
+    if intensity is not None and intensity < 0.75:
+        note = ("⚠️ Esta salida fue de intensidad baja (más bien Z2): no sirve para estimar el umbral. "
+                "El número de abajo casi seguro subestima tu LTHR real. Hacé el test de 30 min a tope.")
+
+    # zonas de FC de Friel a partir del LTHR
+    zones = {
+        "Z1 recuperación": f"< {round(lthr*0.81)}",
+        "Z2 aeróbico": f"{round(lthr*0.81)}–{round(lthr*0.89)}",
+        "Z3 tempo": f"{round(lthr*0.90)}–{round(lthr*0.93)}",
+        "Z4 umbral": f"{round(lthr*0.94)}–{round(lthr*0.99)}",
+        "Z5 VO2max": f"> {round(lthr*1.00)}",
+    }
+    return {
+        "date": r.get("date"), "name": r.get("name"),
+        "lthr": lthr, "best20": round(best20), "best30": round(best30) if best30 else None,
+        "avg_hr": round(avg), "max_hr": round(hmax), "intensity": intensity,
+        "zones": zones, "note": note,
+    }
+
+
 def suggest_route(plan, rides):
     """Recomienda una ruta propia ya hecha que encaje con el entreno de hoy.
 
@@ -285,6 +371,9 @@ def build(wellness, activities, athlete):
     )
     plan["route"] = suggest_route(plan, rides)
     plan["nutrition"] = nutrition_tips(plan["kind"])
+    lthr_est = estimate_lthr(rides)
+    if lthr_est:
+        print(f"LTHR estimado: {json.dumps(lthr_est, ensure_ascii=False)}")
 
     # ---------- alertas
     alerts = []
@@ -325,6 +414,7 @@ def build(wellness, activities, athlete):
             "ctl": ctl_now, "vo2max": vo2_last, "weight": weight_last,
         }),
         "health": health,
+        "lthr": lthr_est,
         "alerts": alerts,
         "series": series,
         "rides": rides[:60],

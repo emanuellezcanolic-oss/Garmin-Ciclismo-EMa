@@ -64,6 +64,24 @@ async function init() {
   $("health-suggestions").innerHTML = (health.suggestions || [])
     .map((s) => `<li>${s}</li>`).join("");
 
+  const lthr = data.lthr || null;
+  if (!lthr) {
+    $("lthr-body").innerHTML = `<p class="hint">Todavía no hay salidas para estimar el umbral.</p>`;
+  } else if (lthr.error) {
+    $("lthr-body").innerHTML = `<p class="hint">${lthr.error}</p>`;
+  } else {
+    const z = lthr.zones || {};
+    $("lthr-body").innerHTML =
+      `<div class="tiles">
+        <div class="tile"><span class="tile-label">LTHR estimado</span><span class="tile-value">${lthr.lthr} lpm</span><span class="tile-sub">mejor 20 min sostenido</span></div>
+        <div class="tile"><span class="tile-label">FC media salida</span><span class="tile-value">${lthr.avg_hr}</span><span class="tile-sub">máx ${lthr.max_hr} lpm</span></div>
+      </div>
+      <div class="table-wrap"><table><thead><tr><th>Zona</th><th>FC (lpm)</th></tr></thead><tbody>` +
+      Object.entries(z).map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join("") +
+      `</tbody></table></div>
+      <p class="hint" style="margin-top:8px">${lthr.note} Salida usada: ${lthr.name || ""} (${lthr.date || ""}).</p>`;
+  }
+
   $("goals-body").innerHTML = (data.goals || [])
     .map((g) => `<tr>
       <td>${g.metric}</td><td>${g.current ?? "—"}</td><td>${g.target ?? "—"}</td>
