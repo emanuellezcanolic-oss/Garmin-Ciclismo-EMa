@@ -38,3 +38,19 @@ Este archivo es memoria de referencia para decisiones futuras del proyecto.
 - Cruzar carga objetiva (TSS por FC) con carga subjetiva (sRPE) y con feedback diario.
 - No decidir por un solo número: integrar HRV + RHR + sueño + estrés + RPE + monotonía.
 - Mantener consistencia y polarización ~80/20 (ya medido; Emanuel venía 62/12/26 → subir Z2).
+
+---
+
+## Papers científicos aportados por Emanuel (2026-08-16) — específicos de MTB
+
+1. **Hebisz 2021 — Polarizado vs Bloques (20 ciclistas MTB entrenados, 8 sem)**: ambos mejoran capacidad aeróbica, pero el **entrenamiento POLARIZADO fue MÁS efectivo para el VO2max** que el de bloques (Pmax, PVT1 y PVT2 mejoraron similar). → Refuerza fuerte la regla 80/20 del generador. Usa umbrales ventilatorios **VT1 (aeróbico) y VT2 (anaeróbico)** como anclas del modelo de 3 zonas.
+2. **Hebisz 2022 — SIT + polarizado y tiempo de reacción (MTB)**: el **Sprint Interval Training (SIT)** mejora de forma aguda el tiempo de reacción y reduce errores; crónicamente sube la potencia media y mejora la toma de decisiones bajo fatiga. Clave para MTB (intensidad variable + decisiones rápidas en descenso). → Agregar SIT al catálogo de tests/entrenos.
+3. **de Moura — Composición corporal y rendimiento (83 ciclistas MTB, maratón 75 km)**: el tiempo de carrera **correlaciona positivo con % de grasa (r=0.415)** y **negativo con masa muscular (r=−0.427)** y agua corporal. Más grasa = más lento; más músculo + hidratación = más rápido. → Respalda directamente los objetivos de bajar grasa + preservar músculo + hidratación que ya tiene el sistema. Motivador concreto para Emanuel (109 kg, 33% grasa).
+4. **Mater 2021 — Cadencia y función neuromuscular (revisión)**: los ciclistas eligen un rango estrecho de cadencia; cadencia alta + intensidad alta fatiga más el sistema neuromuscular. Entrenar a cadencias NO preferidas da estímulos variados (recomendado). → Monitorear cadencia y agregar trabajo de cadencia variada (alta = soltura; baja/torque = fuerza en subida para MTB).
+
+### Reglas y adiciones que salen de estos papers
+- **Polarización 80/20 confirmada como superior** para VO2max en MTB → el planner debe empujar Z2 cuando el % duro semanal supera ~20 (Emanuel venía 62/12/26).
+- **Añadir test/entreno SIT** (6-8 × 30 s all-out / 4 min suave): potencia + decisión bajo fatiga.
+- **Añadir umbrales VT1/VT2 (doble umbral)** vía test incremental → afinar el techo de Z2 y la zona de umbral.
+- **Monitorear cadencia** por salida + drills de cadencia (alta y baja/torque).
+- **Composición → rendimiento**: reforzar seguimiento de grasa/músculo/hidratación como predictor directo del tiempo de carrera.

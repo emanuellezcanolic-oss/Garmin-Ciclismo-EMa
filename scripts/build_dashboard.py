@@ -348,6 +348,7 @@ def build(wellness, activities, athlete):
             "intensity": num(a.get("icu_intensity")),
             "rpe": num(a.get("perceived_exertion") or a.get("icu_rpe")),
             "feel": num(a.get("feel")),
+            "cadence": num(a.get("average_cadence")),
         })
     rides.sort(key=lambda r: r["date"], reverse=True)
 
@@ -450,6 +451,8 @@ def build(wellness, activities, athlete):
     srpe_7d = sum(r["rpe"] * (r["moving_time_s"] / 60) for r in rpe_rides
                   if r["date"] >= (TODAY - timedelta(days=6)).isoformat())
     last_rpe = next((r for r in rides if r.get("rpe")), None)
+    cads = [r["cadence"] for r in rides[:10] if r.get("cadence")]
+    cadence_avg = round(sum(cads) / len(cads)) if cads else None
     subjective = {
         "rpe_filled": len(rpe_rides),
         "rpe_total": len(rides),
@@ -457,6 +460,7 @@ def build(wellness, activities, athlete):
         "last_feel": last_rpe.get("feel") if last_rpe else None,
         "last_date": last_rpe.get("date") if last_rpe else None,
         "srpe_7d": round(srpe_7d) if srpe_7d else None,
+        "cadence_avg": cadence_avg,
     }
     print(f"Subjetivo (RPE/Feel): {json.dumps(subjective, ensure_ascii=False)}")
 

@@ -50,6 +50,14 @@ TESTS = {
                  "Vuelta a la calma\n- 10m Z1 HR"),
         "tip": "En terreno LLANO y sin cortes. Lo que importa es la distancia total en los 12 min.",
     },
+    "sit": {
+        "name": "Sprint Interval Training (SIT) — MTB",
+        "mide": "Potencia máxima y tolerancia anaeróbica; mejora la toma de decisiones bajo fatiga (Hebisz 2022, específico MTB).",
+        "text": ("Calentamiento\n- 10m Z1 HR\n- 5m Z2 HR\n- 3x 20s fuerte / 40s suave\n- 3m Z1 HR\n\n"
+                 "6x SPRINT ALL-OUT\n- 30s Z5 HR (a tope, todo lo que tengas)\n- 4m Z1 HR (recuperación completa)\n\n"
+                 "Vuelta a la calma\n- 10m Z1 HR"),
+        "tip": "Cada sprint es MÁXIMO desde el arranque. La recuperación larga (4 min) es a propósito: hay que llegar entero a cada sprint. En MTB, hacelos en llano o subida suave.",
+    },
     "hrr": {
         "name": "Test de recuperación de FC (HRR)",
         "mide": "Cuánto baja tu FC en 1 min tras un esfuerzo duro. Marcador de forma y del sistema nervioso.",

@@ -102,6 +102,10 @@ async function init() {
     } else if (sj) {
       html += `<div class="step"><strong>Sensaciones (del reloj):</strong> todavía no venís cargando el esfuerzo percibido (RPE) al terminar. Si lo marcás en el reloj, lo uso automáticamente.</div>`;
     }
+    if (sj && sj.cadence_avg) {
+      html += `<div class="step"><strong>Cadencia media (últimas salidas):</strong> ${sj.cadence_avg} rpm.
+        Para MTB conviene variar: alta (>90) para soltura, baja/torque (50-60) en subida para fuerza (Mater 2021).</div>`;
+    }
     qb.innerHTML = html || `<p class="hint">Juntando datos para las métricas de calidad.</p>`;
   }
 
@@ -110,6 +114,7 @@ async function init() {
     ["20 min (umbral)", "Versión más corta del test de umbral, algo menos precisa."],
     ["5 min máximo", "Capacidad aeróbica máxima (proxy de VO2máx)."],
     ["Cooper 12 min", "VO2máx estimado por la distancia en 12 min. En terreno llano."],
+    ["Sprint Interval (SIT) MTB", "6×30s a tope: potencia máxima y decisión bajo fatiga (Hebisz 2022, específico MTB)."],
     ["Recuperación de FC (HRR)", "Cuánto baja tu pulso en 1 min tras un esfuerzo duro: marcador de forma."],
   ];
   const tl = $("tests-list");
