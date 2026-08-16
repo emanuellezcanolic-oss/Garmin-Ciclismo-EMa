@@ -538,15 +538,18 @@ def nutrition_tips(kind):
         ]
     if kind == "resistencia":
         return base + [
-            "CENA de la noche anterior al fondo: hidratos en cantidad SUPERIOR y de fácil digestión (arroz o fideos de arroz) + huevos o queso magro.",
+            "CENA de la noche anterior al fondo: hidratos en cantidad SUPERIOR y de fácil digestión (arroz o fideos de arroz) + huevos o queso magro. Carga previa 24 h: 7-12 g de hidratos por kg (Oosthuyse, nutrición MTB).",
             "Desayuno 2 h antes: pan blanco o discos de arroz + mermelada/membrillo + 1 huevo + 1 fruta. Si tenés menos de 1 h: sacá proteína y fibra.",
-            "Si pedaleás más de 2 h: una ingesta cada 45 min (membrillo 40 g, pasas/arándanos 40 g, o isotónica). Más de 3 h: sumá ingestas complejas (sandwich de queso magro o de batata).",
-            "Post (3R): rehidratar con agua (1.5-2 L en la primera hora y media) + 2 frutas + 1 scoop de proteína; después la comida principal.",
+            "DURANTE (dosis por hora, evidencia MTB — Oosthuyse): hasta 2.5 h de salida → 30-60 g de hidratos/hora; si pasás de 2.5 h → 60-90 g/hora combinando fuentes (maltodextrina + fructosa ~2:1) para absorber más sin cortar la panza.",
+            "En fondos MUY largos (>3-4 h) sumá 10-15 g de proteína/hora: reduce el daño muscular. En calor, la bebida con hidratos + sodio (una pizca de sal) también cuida la hidratación.",
+            "Café/cafeína antes o a mitad de salida larga: 3-6 mg por kg de peso mejora el rendimiento y baja la percepción de esfuerzo.",
+            "Traducción práctica a tu comida real: 1 cuadradito de membrillo ≈ 30 g de hidratos; 40 g de pasas ≈ 30 g. Para llegar a 60 g/hora en fondos largos: 1 membrillo + 1 puñado de pasas o 1 isotónica cada hora.",
+            "Post (3R): rehidratar con agua (1.5-2 L en la primera hora y media) + 2 frutas + 1 scoop de proteína; después la comida principal. Ventana 1-2 h: ~1-1.2 g hidratos/kg + 20-30 g de proteína.",
         ]
     # intensidad / tempo / test
     return base + [
         "Pre entreno intenso: NADA de lácteos antes de la bici; proteína de fácil digestión (huevo o pescado) en la comida previa; ingesta completa 1:30-2 h antes.",
-        "Llevá por las dudas: un cuadradito de membrillo o puñado de pasas. Café pre entreno: recomendado.",
+        "Llevá por las dudas: un cuadradito de membrillo o puñado de pasas. Café pre entreno recomendado: 3-6 mg de cafeína por kg (para vos ~1 taza cargada o 2 comunes) 45-60 min antes mejora rendimiento y baja el esfuerzo percibido.",
         "Post (3R): agua + 1 fruta apenas bajás de la bici + proteína (huevo, claras o scoop).",
     ]
 

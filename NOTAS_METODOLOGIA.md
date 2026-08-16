@@ -54,3 +54,36 @@ Este archivo es memoria de referencia para decisiones futuras del proyecto.
 - **Añadir umbrales VT1/VT2 (doble umbral)** vía test incremental → afinar el techo de Z2 y la zona de umbral.
 - **Monitorear cadencia** por salida + drills de cadencia (alta y baja/torque).
 - **Composición → rendimiento**: reforzar seguimiento de grasa/músculo/hidratación como predictor directo del tiempo de carrera.
+
+## Segunda tanda de papers (2026-08-16)
+
+5. **Inoue et al. — SIT vs HIT en rendimiento de MTB XC (RCT, 6 sem)**: tanto HIT (intervalos aeróbicos de alta intensidad, ~VO2max) como SIT (sprints) mejoran el rendimiento en MTB, pero **HIT es probablemente MÁS beneficioso (83.5%) que SIT** para el rendimiento en MTB. → El trabajo de calidad (el ~20% duro) debe apoyarse principalmente en **HIT tipo 4×4 min a VO2max** (que ya es el "día de intensidad" del plan); el SIT queda como estímulo secundario/específico.
+6. **Revisión sSIT (sprints ≤10 s)**: protocolos con esfuerzos ≤10 s mejoran VO2max y rendimiento aeróbico y anaeróbico; muy eficientes en tiempo, en pocas semanas. → Opción adicional: sprints cortos (10 s) time-efficient.
+7. **Hansen & Rønnestad — Entrenamiento a cadencia baja impuesta (revisión)**: **NO hay evidencia fuerte** de beneficio de la cadencia baja; algunos estudios muestran que la cadencia libremente elegida es igual o mejor. Recomendación tentativa: incluir algún bloque de cadencia baja a intensidad moderada-máxima, pero sin sobrevalorarlo. → CORRIGE la nota anterior: no prescribir torque bajo como pilar; cadencia libre está bien, el trabajo de cadencia baja es variedad opcional.
+8. **Poon 2024 (Sports Medicine, umbrella review + metaanálisis) — Entrenamiento interválico y composición corporal**: el entrenamiento interválico es eficaz para reducir grasa/adiposidad en adultos sanos, eficiente en tiempo (comparable a continuo). → Respalda incluir algo de intensidad para la pérdida de grasa, equilibrado con el volumen Z2.
+9. **Galán-Rioja & Seiler — Periodización, distribución de intensidad y volumen en ciclistas entrenados (revisión sistemática)**: caracteriza modelos de periodización (tradicional, polarizado, piramidal) y TID. → Base para la macro-periodización del plan (base → construcción → pico → transición).
+
+### Reglas actualizadas
+- **Calidad = HIT (4×4 VO2max) como prioridad para MTB** (Inoue); SIT y sprints ≤10 s como estímulos secundarios.
+- **Cadencia**: la libremente elegida está bien; el trabajo de cadencia baja/torque es variedad opcional, NO un pilar (Hansen). Ajustar el mensaje del dashboard.
+- **Intervalos ayudan a la composición corporal** (Poon) → mantener 1-2 días de calidad también sirve para bajar grasa, sin romper el 80/20.
+- **Macro-periodización**: estructurar bloques base/construcción/pico/transición (Galán-Rioja/Seiler).
+
+## Tercera tanda de papers (2026-08-16)
+
+10. **Oosthuyse, Muros & Zabala — Nutrición para MTB y ciclocross (revisión)**. Números concretos por disciplina:
+   - Pre 24 h: 7–12 g/kg CHO (10–12 en maratón/etapas). 1–4 h pre: 1–4 g/kg CHO. <1 h pre: ~30–60 g CHO rápido si hace falta.
+   - **Durante: eventos <2.5 h → 30–60 g/h CHO; >2.5 h → 60–90 g/h**, como **CHO múltiples transportables (maltodextrina:fructosa 2:1 o 3:2)**, solución 5–8% + electrolitos (sodio 10–35 mmol/L, potasio 3–5 mmol/L).
+   - Maratón/etapas (XCM/XCS): sumar **proteína (caseína/whey hidrolizada) 10–15 g/h** (solución 1–2%).
+   - Post: 1–1.2 g/kg CHO + 20–30 g proteína láctea en la 1ª-2ª h; CHO extendido 4–6 h (mezcla glucosa-fructosa).
+   - Cafeína 3–6 mg/kg pre; total ≤6 mg/kg, lejos de 9. Micronutrientes clave: calcio 1000–1500 mg/día (MTB es osteogénico), hierro 8 mg/día, B12.
+   - **Gut training**: practicar la nutrición de carrera en los entrenos para tolerar los CHO.
+11. **de Moura — Hidratación y rendimiento MTB en calor**: la hidratación es determinante del rendimiento, sobre todo en ambiente caluroso. → Reforzar avisos de hidratación en días de calor.
+12. **Inoue 2012 — Tests anaeróbicos y rendimiento XCO**: la capacidad anaeróbica se relaciona con el rendimiento en MTB XC. → Justifica tests/entrenos anaeróbicos (SIT, sprints) para MTB.
+13. **Schoenmakers 2026 — Tiempo cerca del VO2max en HIIT (metaanálisis)**: el driver clave del HIIT es maximizar el TIEMPO cerca del VO2max. → Diseñar los intervalos para maximizar T@VO2max (bloques de 3–5 min; el 4×4 va bien).
+14. **Viana 2018 — Estrategia de ritmo (pacing) en MTB XCO**: los XCO arrancan agresivo y luego bajan; los de mayor rendimiento tienen **mayor potencia en OBLA (umbral)** y terminan más rápido. → Entrenar la potencia en umbral (OBLA≈VT2/LT2) mejora el rendimiento; enseñar estrategia de pacing.
+
+### Reglas actualizadas (nutrición y calidad)
+- **Nutrición intra-entreno MTB cuantificada** (Oosthuyse): usar 30–60 g/h (<2.5 h) y 60–90 g/h (>2.5 h) con maltodextrina:fructosa 2:1; proteína en fondos largos; cafeína 3–6 mg/kg. Integrado en las tarjetas de nutrición.
+- **HIIT**: priorizar tiempo cerca de VO2max (4×4). **Umbral/OBLA**: incluir trabajo de umbral para MTB (Viana).
+- **Hidratación reforzada en calor**.

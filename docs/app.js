@@ -104,7 +104,7 @@ async function init() {
     }
     if (sj && sj.cadence_avg) {
       html += `<div class="step"><strong>Cadencia media (últimas salidas):</strong> ${sj.cadence_avg} rpm.
-        Para MTB conviene variar: alta (>90) para soltura, baja/torque (50-60) en subida para fuerza (Mater 2021).</div>`;
+        La cadencia libre está bien; sumar algún bloque de cadencia variada da estímulos distintos, pero no es un pilar (evidencia débil para cadencia baja — Hansen 2020).</div>`;
     }
     qb.innerHTML = html || `<p class="hint">Juntando datos para las métricas de calidad.</p>`;
   }
