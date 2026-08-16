@@ -90,7 +90,7 @@ async function init() {
       <div class="table-wrap"><table><thead><tr><th>Zona</th><th>FC (lpm)</th></tr></thead><tbody>` +
       Object.entries(z).map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join("") +
       `</tbody></table></div>
-      <p class="hint" style="margin-top:8px">${lthr.note} Salida usada: ${lthr.name || ""} (${lthr.date || ""}).</p>`;
+      <p class="hint" style="margin-top:8px"><b>PROVISORIO — todavía no fijado como referencia.</b> ${lthr.note} Salida usada: ${lthr.name || ""} (${lthr.date || ""}).</p>`;
   }
 
   $("goals-body").innerHTML = (data.goals || [])
