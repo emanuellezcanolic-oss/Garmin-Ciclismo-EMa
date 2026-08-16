@@ -346,6 +346,8 @@ def build(wellness, activities, athlete):
             "np_watts": num(a.get("icu_weighted_avg_watts")),
             "load": load,
             "intensity": num(a.get("icu_intensity")),
+            "rpe": num(a.get("perceived_exertion") or a.get("icu_rpe")),
+            "feel": num(a.get("feel")),
         })
     rides.sort(key=lambda r: r["date"], reverse=True)
 
@@ -443,6 +445,21 @@ def build(wellness, activities, athlete):
     quality = training_quality(activities, load_by_day)
     print(f"Calidad: {json.dumps(quality, ensure_ascii=False)}")
 
+    # ---- carga subjetiva (sRPE) desde el RPE/Feel que cargás en el reloj
+    rpe_rides = [r for r in rides if r.get("rpe") and r.get("moving_time_s")]
+    srpe_7d = sum(r["rpe"] * (r["moving_time_s"] / 60) for r in rpe_rides
+                  if r["date"] >= (TODAY - timedelta(days=6)).isoformat())
+    last_rpe = next((r for r in rides if r.get("rpe")), None)
+    subjective = {
+        "rpe_filled": len(rpe_rides),
+        "rpe_total": len(rides),
+        "last_rpe": last_rpe.get("rpe") if last_rpe else None,
+        "last_feel": last_rpe.get("feel") if last_rpe else None,
+        "last_date": last_rpe.get("date") if last_rpe else None,
+        "srpe_7d": round(srpe_7d) if srpe_7d else None,
+    }
+    print(f"Subjetivo (RPE/Feel): {json.dumps(subjective, ensure_ascii=False)}")
+
     # ---- sonda DFA a1: ¿el reloj graba intervalos latido a latido (RR)?
     if rides:
         try:
@@ -494,6 +511,7 @@ def build(wellness, activities, athlete):
         "health": health,
         "lthr": lthr_est,
         "quality": quality,
+        "subjective": subjective,
         "alerts": alerts,
         "series": series,
         "rides": rides[:60],
