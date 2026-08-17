@@ -305,7 +305,10 @@ details li { margin: 5px 0; }
 
 /* ---------------- composición corporal ---------------- */
 .comp-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-@media (max-width: 600px) { .comp-grid { grid-template-columns: 1fr; } }
+.comp-grid-4 { grid-template-columns: repeat(4, 1fr); }
+@media (max-width: 720px) { .comp-grid, .comp-grid-4 { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 420px) { .comp-grid, .comp-grid-4 { grid-template-columns: 1fr; } }
+.comp-add { margin-top: 14px; }
 .comp-kpi {
   display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; border-radius: 14px;
   background: linear-gradient(180deg, var(--panel-2), var(--bg-2)); border: 1px solid var(--line);

@@ -304,6 +304,36 @@ def num(x):
     return x if isinstance(x, (int, float)) else None
 
 
+COMP_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "composicion.json")
+
+
+def merge_manual_composition(days):
+    """Fusiona las mediciones de composición cargadas a mano (balanza Femmto)
+    en el diccionario de días, para que el resto del pipeline (tendencias,
+    objetivos, guardarraíl REDs) las use como si vinieran de Garmin."""
+    try:
+        with open(COMP_PATH, encoding="utf-8") as f:
+            entries = json.load(f)
+    except Exception as e:
+        print(f"AVISO: sin composición manual ({e})")
+        return
+    for e in sorted(entries, key=lambda x: x.get("date", "")):
+        d = e.get("date")
+        if not d:
+            continue
+        day = days.setdefault(d, {"date": d})
+        for k in ("weight", "body_fat", "fat_mass", "lean", "muscle"):
+            v = e.get(k)
+            if v is not None and day.get(k) is None:
+                day[k] = v
+        if day.get("lean") is None and day.get("weight") and day.get("fat_mass") is not None:
+            day["lean"] = round(day["weight"] - day["fat_mass"], 1)
+    last = max(entries, key=lambda x: x.get("date", "")) if entries else {}
+    print(f"Composición manual: {len(entries)} medición(es); última {last.get('date')} "
+          f"→ grasa {last.get('body_fat')}% · músculo {last.get('muscle')} kg")
+    return last
+
+
 def build(wellness, activities, athlete):
     # ---------- bienestar diario (intervals.icu ya trae ctl/atl calculados)
     days = {}
@@ -336,6 +366,13 @@ def build(wellness, activities, athlete):
             days[d]["lean"] = round(wt * (1 - bf / 100), 1)
         else:
             days[d]["lean"] = None
+        days[d]["muscle"] = None
+
+    # ---------- fusionar composición manual (balanza Femmto): la balanza no
+    # sincroniza sola con Garmin, así que estas mediciones se cargan a mano.
+    # Rellenan lo que intervals no trajo; si algún día la balanza llega a
+    # Garmin, ese dato real tiene prioridad.
+    comp_meta = merge_manual_composition(days) or {}
 
     # ---------- actividades de ciclismo
     rides = []
@@ -442,6 +479,9 @@ def build(wellness, activities, athlete):
     fats = recent("fat_mass", 90)
     fat_mass_last = round(fats[0], 1) if fats else None
     fat_mass_delta30 = delta30(fats)
+    muscles = recent("muscle", 90)
+    muscle_last = round(muscles[0], 1) if muscles else None
+    muscle_delta30 = delta30(muscles)
 
     # ritmo de pérdida de peso semana a semana (%/sem) para el guardarraíl REDs
     weight_wk_pct = None
@@ -472,7 +512,7 @@ def build(wellness, activities, athlete):
                             stress3, stress7, sleep3, tsb_now,
                             weight_last, weight7, hydration_today, day_load(1),
                             weight_wk_pct=weight_wk_pct)
-    print(f"Composición: {json.dumps({'body_fat': body_fat_last, 'fat_mass': fat_mass_last, 'lean': lean_last, 'bf_delta30': body_fat_delta30, 'lean_delta30': lean_delta30, 'weight_wk_pct': weight_wk_pct}, ensure_ascii=False)}")
+    print(f"Composición: {json.dumps({'body_fat': body_fat_last, 'fat_mass': fat_mass_last, 'lean': lean_last, 'muscle': muscle_last, 'bf_delta30': body_fat_delta30, 'lean_delta30': lean_delta30, 'weight_wk_pct': weight_wk_pct}, ensure_ascii=False)}")
 
     # ---------- calidad (se calcula antes del plan para respetar el 80/20)
     quality = training_quality(activities, load_by_day)
@@ -566,6 +606,8 @@ def build(wellness, activities, athlete):
             "body_fat": body_fat_last, "body_fat7": body_fat7, "body_fat_delta30": body_fat_delta30,
             "fat_mass": fat_mass_last, "fat_mass_delta30": fat_mass_delta30,
             "lean": lean_last, "lean7": lean7, "lean_delta30": lean_delta30,
+            "muscle": muscle_last, "muscle_delta30": muscle_delta30,
+            "comp_date": comp_meta.get("date"), "comp_source": comp_meta.get("source"),
             "vo2max": vo2_last, "vo2max_delta90": vo2_delta90,
             "stress": today_w.get("stress") or yesterday_w.get("stress"), "stress7": stress7,
         },

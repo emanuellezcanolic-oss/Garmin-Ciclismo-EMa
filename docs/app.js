@@ -318,15 +318,29 @@ function renderComposicion(t) {
     `<div class="comp-kpi"><span class="ck-label">${label}</span>
       <span class="ck-value">${val != null ? val : "—"}<small>${val != null ? " " + unit : ""}</small></span>
       ${delta(d, goodDown)}</div>`;
+  const fecha = t.comp_date ? ` · medición ${t.comp_date}${t.comp_source ? " (" + t.comp_source + ")" : ""}` : "";
   el.innerHTML =
-    `<div class="comp-grid">
+    `<div class="comp-grid comp-grid-4">
       ${box("% de grasa", t.body_fat, "%", t.body_fat_delta30, true)}
       ${box("Masa grasa", t.fat_mass, "kg", t.fat_mass_delta30, true)}
-      ${box("Masa magra (músculo)", t.lean, "kg", t.lean_delta30, false)}
+      ${box("Masa magra", t.lean, "kg", t.lean_delta30, false)}
+      ${box("Músculo (MME)", t.muscle, "kg", t.muscle_delta30, false)}
     </div>
     <p class="hint" style="margin-top:12px">Es la <b>grasa</b> la que baja tu potencia/kg, no el músculo
     (Arriel 2020; de Moura 2025). El plan: bajar grasa <b>preservando músculo</b> — mirá la tendencia de
-    semanas, no el número de un día. El objetivo va abajo, en Objetivos.</p>`;
+    semanas, no el número de un día${fecha}.</p>
+    <a class="test-tile comp-add" target="_blank" rel="noopener" href="${pesoIssueURL()}" style="max-width:320px">
+      <span class="t-name">➕ Cargar medición de la balanza</span>
+      <span class="t-desc">Se abre GitHub con una plantilla; completás peso, % grasa, masa grasa y músculo, confirmás y se suma solo.</span>
+      <span class="t-cta">Cargar composición →</span></a>`;
+}
+function pesoIssueURL() {
+  const hoy = new Date().toISOString().slice(0, 10);
+  const title = "cargar-peso";
+  const body = `Medición de la balanza. Completá los valores (dejá lo que no tengas):\n\n` +
+    `fecha: ${hoy}\npeso: \ngrasa: \nmasa_grasa: \nmusculo: \n\n` +
+    `_Confirmá con "Submit new issue". El sistema la suma a tu seguimiento y cierra este aviso._`;
+  return `https://github.com/${REPO}/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
 }
 
 // ---------- periodización ----------
