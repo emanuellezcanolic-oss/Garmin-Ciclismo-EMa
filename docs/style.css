@@ -320,6 +320,34 @@ details li { margin: 5px 0; }
 .c-delta.good { color: var(--green); }
 .c-delta.bad { color: var(--amber); }
 
+/* ---------------- progreso de objetivos ---------------- */
+.goal-prog { display: flex; align-items: center; gap: 8px; min-width: 130px; }
+.gp-bar { flex: 1; height: 8px; border-radius: 999px; background: var(--bg-2); border: 1px solid var(--line); overflow: hidden; }
+.gp-bar span { display: block; height: 100%; background: linear-gradient(90deg, var(--accent-2), var(--green)); }
+.gp-bar span.keep { background: var(--accent-2); }
+.gp-txt { font-family: var(--mono); font-size: 0.72rem; color: var(--muted); white-space: nowrap; }
+
+/* ---------------- dashboard por salida ---------------- */
+.ride-row { cursor: pointer; }
+.ride-caret { color: var(--faint); font-size: 0.7rem; transition: transform 0.15s; display: inline-block; }
+.ride-row.open { background: rgba(255,106,61,0.06); }
+.ride-row.open .ride-caret { transform: rotate(90deg); color: var(--accent); }
+.ride-detail > td { background: var(--bg-2); padding: 0; }
+.ride-panel { padding: 16px 14px; border-left: 2px solid var(--accent); }
+.ride-metrics { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+.rm-tile { display: flex; flex-direction: column; gap: 2px; padding: 9px 11px; background: rgba(255,255,255,0.02); border: 1px solid var(--line); border-radius: 10px; }
+.rm-label { font-size: 0.68rem; color: var(--muted); white-space: normal; }
+.rm-value { font-family: var(--mono); font-weight: 700; font-size: 1.05rem; color: #fff; white-space: normal; }
+.rm-sub { font-size: 0.64rem; color: var(--faint); white-space: normal; }
+.rd-block { margin-top: 14px; }
+.rd-title { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); margin-bottom: 7px; }
+.zone-bar { display: flex; height: 26px; border-radius: 8px; overflow: hidden; border: 1px solid var(--line); background: var(--bg-2); }
+.zseg { display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 0.7rem; font-weight: 600; color: #0d1016; min-width: 0; overflow: hidden; }
+.zseg.z1 { background: var(--z1); } .zseg.z2 { background: var(--z2); } .zseg.z3 { background: var(--z3); }
+.zseg.z4 { background: var(--z4); } .zseg.z5 { background: var(--z5); color: #fff; }
+.zone-legend { display: flex; gap: 16px; font-size: 0.72rem; color: var(--muted); margin-top: 6px; }
+.ride-read { font-size: 0.86rem; color: var(--text); opacity: 0.92; margin: 14px 0 0; padding: 10px 12px; background: rgba(255,255,255,0.02); border: 1px solid var(--line); border-radius: 10px; }
+
 /* ---------------- periodización ---------------- */
 .fase-actual {
   background: rgba(255,106,61,0.06); border: 1px solid rgba(255,106,61,0.25);

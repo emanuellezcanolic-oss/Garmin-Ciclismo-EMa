@@ -400,6 +400,10 @@ def build(wellness, activities, athlete):
             "rpe": num(a.get("perceived_exertion") or a.get("icu_rpe")),
             "feel": num(a.get("feel")),
             "cadence": num(a.get("average_cadence")),
+            "calories": num(a.get("calories")),
+            "decoupling": num(a.get("decoupling")),
+            "zone_times": (a.get("icu_hr_zone_times") or a.get("hr_zone_times")
+                           or a.get("icu_zone_times") or None),
         })
     rides.sort(key=lambda r: r["date"], reverse=True)
 
@@ -482,6 +486,11 @@ def build(wellness, activities, athlete):
     muscles = recent("muscle", 90)
     muscle_last = round(muscles[0], 1) if muscles else None
     muscle_delta30 = delta30(muscles)
+
+    # valores de partida (el dato más viejo disponible) para medir progreso a objetivos
+    body_fat_start = round(bfs[-1], 1) if bfs else None
+    weight_start = round(weights[-1], 1) if weights else None
+    vo2_start = round(vo2s[-1], 1) if vo2s else None
 
     # ritmo de pérdida de peso semana a semana (%/sem) para el guardarraíl REDs
     weight_wk_pct = None
@@ -615,6 +624,9 @@ def build(wellness, activities, athlete):
         "goals": make_goals({
             "ctl": ctl_now, "vo2max": vo2_last, "weight": weight_last,
             "body_fat": body_fat_last, "lean": lean_last,
+            "ctl_start": series[0]["ctl"] if series else ctl_now,
+            "vo2max_start": vo2_start, "weight_start": weight_start,
+            "body_fat_start": body_fat_start,
         }),
         "health": health,
         "overtraining": overtraining,
@@ -675,49 +687,51 @@ def make_goals(today):
     horizon = (TODAY + timedelta(weeks=12)).isoformat()
     ctl = today.get("ctl")
     if ctl is not None:
+        start = today.get("ctl_start") or ctl
         goals.append({
-            "metric": "Fitness (CTL)",
-            "current": ctl, "target": round(min(ctl + 10, 90)), "by": horizon,
+            "metric": "Fitness (CTL)", "unit": "",
+            "current": ctl, "start": round(start, 1), "target": round(min(start + 14, 85)), "by": horizon, "dir": "up",
             "note": "Subida segura: ~5-7 puntos por mes, sin pasar ACWR 1.3.",
         })
     vo2 = today.get("vo2max")
     if vo2 is not None:
+        start = today.get("vo2max_start") or vo2
         goals.append({
-            "metric": "VO2max (est. Garmin)",
-            "current": vo2, "target": round(vo2 * 1.06, 1), "by": horizon,
+            "metric": "VO2max (est. Garmin)", "unit": "",
+            "current": vo2, "start": start, "target": round(start * 1.06, 1), "by": horizon, "dir": "up",
             "note": "+6% en 12 semanas es realista entrenando polarizado; el techo lo pone la genética, y a ese techo se llega tras años, no meses.",
         })
     w = today.get("weight")
     if w is not None:
+        start = today.get("weight_start") or w
         goals.append({
-            "metric": "Peso",
-            "current": w, "target": round(w - 6, 1), "by": horizon,
+            "metric": "Peso", "unit": "kg",
+            "current": w, "start": start, "target": round(start - 7, 1), "by": horizon, "dir": "down",
             "note": "-0.5%/semana: el objetivo es bajar GRASA, no músculo. En MTB cada kg de grasa menos es potencia/kg gratis.",
         })
     else:
         goals.append({
-            "metric": "Peso",
-            "current": None, "target": None, "by": None,
+            "metric": "Peso", "current": None, "target": None, "by": None,
             "note": "Cargá tu peso en Garmin Connect (2-3 veces/semana, en ayunas) y el objetivo se calcula solo.",
         })
     bf = today.get("body_fat")
     if bf is not None:
+        start = today.get("body_fat_start") or bf
         goals.append({
-            "metric": "% de grasa",
-            "current": bf, "target": round(max(bf - 3, 12), 1), "by": horizon,
-            "note": "Es la grasa la que baja tu potencia/kg, no el músculo (Arriel 2020; de Moura 2025). Bajar ~3 puntos en 12 sem es realista y seguro (~0.5%/sem de peso).",
+            "metric": "% de grasa", "unit": "%",
+            "current": bf, "start": start, "target": round(max(start - 5, 12), 1), "by": horizon, "dir": "down",
+            "note": "Es la grasa la que baja tu potencia/kg, no el músculo (Arriel 2020; de Moura 2025). Bajar ~5 puntos es un objetivo realista y seguro (~0.5%/sem de peso).",
         })
     else:
         goals.append({
-            "metric": "% de grasa",
-            "current": None, "target": None, "by": None,
+            "metric": "% de grasa", "current": None, "target": None, "by": None,
             "note": "Pesate en tu balanza Femmto 2-3 veces/semana (en ayunas): cuando el % de grasa llegue a intervals.icu, el objetivo se calcula solo.",
         })
     lean = today.get("lean")
     if lean is not None:
         goals.append({
-            "metric": "Masa magra (músculo)",
-            "current": lean, "target": lean, "by": horizon,
+            "metric": "Masa magra (músculo)", "unit": "kg",
+            "current": lean, "start": lean, "target": lean, "by": horizon, "dir": "keep",
             "note": "Objetivo: MANTENERLA (o subir levemente) mientras baja la grasa. Se logra con proteína 1.6-2.0 g/kg y sin déficit en días duros (ISSN; IOC-REDs).",
         })
     goals.append({

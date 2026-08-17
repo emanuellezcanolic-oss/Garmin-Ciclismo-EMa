@@ -2,6 +2,22 @@
 
 const $ = (id) => document.getElementById(id) || {};
 const REPO = "emanuellezcanolic-oss/Garmin-Ciclismo-EMa";
+let RIDES = [];
+
+// progreso hacia un objetivo (qué tan lejos estás)
+function goalProgress(g) {
+  if (g.current == null || g.target == null || g.start == null) return null;
+  const u = g.unit ? " " + g.unit : "";
+  if (g.dir === "keep") {
+    const d = Math.round((g.current - g.start) * 10) / 10;
+    return { keep: true, pct: d >= 0 ? 100 : 72, txt: d >= 0 ? "✓ mantenida" : `▼ ${d}${u}` };
+  }
+  const span = g.target - g.start;
+  let pct = span ? ((g.current - g.start) / span) * 100 : 0;
+  pct = Math.max(0, Math.min(100, pct));
+  const left = Math.round(Math.abs(g.target - g.current) * 10) / 10;
+  return { pct, txt: pct >= 100 ? "✓ cumplido" : `faltan ${left}${u}` };
+}
 
 const KIND_TAG = {
   descanso: "descanso", suave: "recuperación", resistencia: "base",
@@ -257,10 +273,16 @@ async function init() {
     eb.innerHTML = `<p class="hint">Base de evidencia cargándose.</p>`;
   }
 
-  // ---- objetivos
-  $("goals-body").innerHTML = (data.goals || [])
-    .map((g) => `<tr><td>${g.metric}</td><td>${g.current ?? "—"}</td><td>${g.target ?? "—"}</td>
-      <td>${g.by ?? "—"}</td><td style="white-space:normal">${g.note}</td></tr>`).join("");
+  // ---- objetivos (con barra de progreso: qué tan lejos del objetivo)
+  $("goals-body").innerHTML = (data.goals || []).map((g) => {
+    const p = goalProgress(g);
+    const cell = p
+      ? `<div class="goal-prog"><div class="gp-bar"><span class="${p.keep ? "keep" : ""}" style="width:${p.pct}%"></span></div>
+          <span class="gp-txt">${p.txt}</span></div>`
+      : `<span class="hint">—</span>`;
+    return `<tr><td>${g.metric}</td><td>${g.current ?? "—"}</td><td>${g.target ?? "—"}</td>
+      <td>${cell}</td><td style="white-space:normal">${g.note}</td></tr>`;
+  }).join("");
 
   // ---- alertas de carga
   $("alerts").innerHTML = (data.alerts || [])
@@ -282,13 +304,16 @@ async function init() {
     tile("VO2max", t.vo2max != null ? t.vo2max : null, t.vo2max_delta90 != null ? `${t.vo2max_delta90 > 0 ? "+" : ""}${t.vo2max_delta90} en 90d` : "estimado Garmin") +
     tile("Estrés", t.stress != null ? Math.round(t.stress) : null, t.stress7 != null ? `7d: ${t.stress7}` : "0-100");
 
-  // ---- salidas
-  $("rides-body").innerHTML = (data.rides || [])
-    .map((r) => `<tr><td>${r.date}</td><td>${r.name || "—"}</td>
+  // ---- salidas (filas desplegables: tocá una para ver su dashboard)
+  RIDES = data.rides || [];
+  $("rides-body").innerHTML = RIDES.map((r, i) => `<tr class="ride-row" data-ride="${i}">
+      <td>${r.date}</td><td>${r.name || "—"}</td>
       <td>${(r.type || "").replace(/([A-Z])/g, " $1").trim()}</td>
       <td>${r.distance_km ? r.distance_km + " km" : "—"}</td><td>${fmtDur(r.moving_time_s)}</td>
       <td>${r.elevation_m ? Math.round(r.elevation_m) + " m" : "—"}</td>
-      <td>${r.avg_hr ? Math.round(r.avg_hr) : "—"}</td><td>${r.load ? Math.round(r.load) : "—"}</td></tr>`).join("");
+      <td>${r.avg_hr ? Math.round(r.avg_hr) : "—"}</td>
+      <td>${r.load ? Math.round(r.load) : "—"} <span class="ride-caret">▸</span></td></tr>`).join("");
+  wireRideRows();
 
   $("footer-note").textContent =
     `Datos vía intervals.icu (sincronizado con tu Garmin). Se actualiza solo cada 3 horas. ` +
@@ -391,6 +416,88 @@ function renderTests() {
         <span class="t-cta">Cargar al reloj →</span></a>`).join("");
     renderTests._last = dateStr;
   }
+}
+
+// ---------- dashboard por salida ----------
+function wireRideRows() {
+  const rb = document.getElementById("rides-body");
+  if (!rb) return;
+  rb.onclick = (e) => {
+    const row = e.target.closest(".ride-row");
+    if (!row) return;
+    const open = rb.querySelector(".ride-detail");
+    const openFor = open ? open.dataset.for : null;
+    rb.querySelectorAll(".ride-detail").forEach((d) => d.remove());
+    rb.querySelectorAll(".ride-row.open").forEach((r) => r.classList.remove("open"));
+    if (openFor === row.dataset.ride) return;             // ya estaba abierta → cerrar
+    row.classList.add("open");
+    const tr = document.createElement("tr");
+    tr.className = "ride-detail";
+    tr.dataset.for = row.dataset.ride;
+    tr.innerHTML = `<td colspan="8">${renderRideDetail(RIDES[+row.dataset.ride])}</td>`;
+    row.after(tr);
+  };
+}
+
+function metricTile(label, value, sub) {
+  if (value == null || value === "" || value === "—") return "";
+  return `<div class="rm-tile"><span class="rm-label">${label}</span>
+    <span class="rm-value">${value}</span><span class="rm-sub">${sub || ""}</span></div>`;
+}
+
+function zoneDist(zt) {
+  if (!Array.isArray(zt) || !zt.length) return null;
+  const tot = zt.reduce((a, b) => a + (b || 0), 0);
+  if (tot <= 0) return null;
+  const low = (zt[0] || 0) + (zt[1] || 0);
+  const mid = zt[2] || 0;
+  const high = zt.slice(3).reduce((a, b) => a + (b || 0), 0);
+  return { tot, low_pct: Math.round(low / tot * 100), mid_pct: Math.round(mid / tot * 100), high_pct: Math.round(high / tot * 100) };
+}
+
+function renderZoneBar(zt) {
+  const dist = zoneDist(zt);
+  if (!dist) return `<p class="hint">Esta salida no trae tiempo en zonas de FC.</p>`;
+  const zc = ["z1", "z2", "z3", "z4", "z5", "z5", "z5"];
+  const seg = zt.map((s, i) => {
+    const p = Math.round((s || 0) / dist.tot * 100);
+    return p > 0 ? `<div class="zseg ${zc[i] || "z5"}" style="width:${p}%" title="Z${i + 1}: ${p}%">${p >= 8 ? "Z" + (i + 1) : ""}</div>` : "";
+  }).join("");
+  return `<div class="zone-bar">${seg}</div>
+    <div class="zone-legend"><span>Suave ${dist.low_pct}%</span><span>Medio ${dist.mid_pct}%</span><span>Duro ${dist.high_pct}%</span></div>`;
+}
+
+function rideReading(r) {
+  const d = zoneDist(r.zone_times);
+  if (!d) return "";
+  let tipo, ok;
+  if (d.high_pct >= 15) { tipo = "Salida de calidad: bastante tiempo en Z4/Z5 (umbral/VO2max)."; ok = false; }
+  else if (d.mid_pct >= 25) { tipo = "Trabajo de tempo/umbral: mucho tiempo en Z3."; ok = false; }
+  else { tipo = "Base aeróbica: mayormente Z1–Z2, bajo costo de fatiga."; ok = true; }
+  const pol = d.low_pct >= 80 ? "Respetó el reparto 80/20 ✅." : "Cargó intensidad: contá esto como parte de tu 20% duro.";
+  return `<p class="ride-read">${tipo} ${pol}</p>`;
+}
+
+function renderRideDetail(r) {
+  if (!r) return "";
+  const IF = r.intensity != null ? Math.round(r.intensity) + "%" : null;
+  const grid =
+    metricTile("Distancia", r.distance_km != null ? r.distance_km + " km" : null) +
+    metricTile("Tiempo", fmtDur(r.moving_time_s)) +
+    metricTile("Desnivel", r.elevation_m != null ? Math.round(r.elevation_m) + " m" : null) +
+    metricTile("FC promedio", r.avg_hr != null ? Math.round(r.avg_hr) : null, r.max_hr != null ? "máx " + Math.round(r.max_hr) : "") +
+    metricTile("Carga (TSS)", r.load ? Math.round(r.load) : null) +
+    metricTile("Intensidad (IF)", IF, "esfuerzo relativo") +
+    metricTile("Cadencia", r.cadence != null ? Math.round(r.cadence) + " rpm" : null) +
+    metricTile("Calorías", r.calories != null ? Math.round(r.calories) + " kcal" : null) +
+    metricTile("RPE / sensación", r.rpe != null ? r.rpe + "/10" : null, r.feel != null ? "feel " + r.feel + "/5" : "") +
+    metricTile("Desacople", r.decoupling != null ? r.decoupling.toFixed(1) + "%" : null, r.decoupling != null ? (r.decoupling < 5 ? "buena durabilidad" : "se te desacopló") : "") +
+    metricTile("Potencia media", r.avg_watts != null ? Math.round(r.avg_watts) + " W" : null, r.np_watts != null ? "NP " + Math.round(r.np_watts) : "");
+  return `<div class="ride-panel">
+    <div class="ride-metrics">${grid}</div>
+    <div class="rd-block"><div class="rd-title">Intensidad de la salida (tiempo en zonas de FC)</div>${renderZoneBar(r.zone_times)}</div>
+    ${rideReading(r)}
+  </div>`;
 }
 
 // ---------- gráfico de carga ----------
