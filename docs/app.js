@@ -236,6 +236,9 @@ async function init() {
   // ---- tests (tiles que abren un issue pre-cargado)
   renderTests();
 
+  // ---- periodización
+  renderPeriodizacion(data.periodizacion);
+
   // ---- base científica
   const eb = $("evidence-body");
   const groups = data.evidencia || [];
@@ -287,6 +290,36 @@ async function init() {
   $("footer-note").textContent =
     `Datos vía intervals.icu (sincronizado con tu Garmin). Se actualiza solo cada 3 horas. ` +
     `${data.counts.rides_180d} salidas y ${data.counts.wellness_days} días de bienestar en 6 meses.`;
+}
+
+// ---------- periodización ----------
+function renderPeriodizacion(pz) {
+  if (!pz || !pz.actual) return;
+  const f = pz.actual;
+  const deload = f.deload
+    ? `<span class="fase-badge deload">semana de descarga</span>`
+    : `<span class="fase-badge">carga</span>`;
+  $("fase-actual").innerHTML = `
+    <div class="fase-top">
+      <div>
+        <span class="fase-name">${f.fase}</span>
+        <span class="fase-week">semana ${f.semana_global} / ${f.total_semanas}</span>
+      </div>
+      ${deload}
+    </div>
+    <p class="fase-foco">${f.foco}</p>
+    <div class="fase-targets">
+      <div class="ft"><span class="ft-val">${f.vol_pct}%</span><span class="ft-lbl">volumen ref.</span></div>
+      <div class="ft"><span class="ft-val">${f.objetivo_tss}</span><span class="ft-lbl">objetivo TSS/sem</span></div>
+      <div class="ft"><span class="ft-val">${f.dias_calidad}</span><span class="ft-lbl">días de calidad</span></div>
+      <div class="ft"><span class="ft-val">≤${f.cap_high}%</span><span class="ft-lbl">techo intensidad</span></div>
+    </div>`;
+  $("season-map").innerHTML = (pz.mapa || [])
+    .map((b) => `<div class="seg ${b.activo ? "active" : ""}">
+      <span class="seg-name">${b.nombre}</span>
+      <span class="seg-weeks">sem ${b.semanas}</span>
+      <span class="seg-foco">${b.foco}</span>
+    </div>`).join("");
 }
 
 // ---------- tests: enlaces a issue pre-cargado ----------

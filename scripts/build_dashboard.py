@@ -13,6 +13,7 @@ from datetime import date, datetime, timedelta, timezone
 import requests
 
 from evidencia import evidencia_para_plan, evidencia_agrupada
+from periodizacion import fase_actual, mapa_temporada
 
 API = "https://intervals.icu/api/v1"
 ATHLETE = os.environ.get("ATHLETE_ID", "i650204")
@@ -437,17 +438,23 @@ def build(wellness, activities, athlete):
     quality = training_quality(activities, load_by_day)
     print(f"Calidad: {json.dumps(quality, ensure_ascii=False)}")
 
+    # ---------- macro-periodización (marco de la temporada, anclado a tu CTL)
+    fase = fase_actual(TODAY, ctl=ctl_now, chronic_weekly=chronic if chronic else None)
+    print(f"Periodización: {json.dumps(fase, ensure_ascii=False)}")
+
     # ---------- plan del día (fase 3: decisión basada en datos)
     plan = make_plan(
         tsb=tsb_now, acwr=acwr, acute=acute, chronic=chronic,
         hrv_today=hrv_today, hrv30=hrv30, sleep_secs=sleep_today,
         sleep_score=sleep_score_today, readiness=readiness_today,
         load_recent=[day_load(i) for i in range(7)],
-        polar=quality.get("polarization"),
+        polar=quality.get("polarization"), fase=fase,
     )
     plan["route"] = suggest_route(plan, rides)
     plan["nutrition"] = nutrition_tips(plan["kind"])
     plan["evidencia"] = evidencia_para_plan(plan["kind"])
+    plan["fase"] = {"nombre": fase["fase"], "semana_global": fase["semana_global"],
+                    "total_semanas": fase["total_semanas"], "deload": fase["deload"]}
     lthr_est = estimate_lthr(rides)
     if lthr_est:
         print(f"LTHR estimado: {json.dumps(lthr_est, ensure_ascii=False)}")
@@ -529,6 +536,7 @@ def build(wellness, activities, athlete):
         "quality": quality,
         "subjective": subjective,
         "alerts": alerts,
+        "periodizacion": {"actual": fase, "mapa": mapa_temporada(TODAY)},
         "evidencia": evidencia_agrupada(),
         "series": series,
         "rides": rides[:60],
@@ -777,7 +785,7 @@ def overtraining_check(rhr3, rhr30, hrv3, hrv30, tsb, monotony, acwr, sleep3_sec
 
 
 def make_plan(tsb, acwr, acute, chronic, hrv_today, hrv30, sleep_secs,
-              sleep_score, readiness, load_recent, polar=None):
+              sleep_score, readiness, load_recent, polar=None, fase=None):
     """Decide el entreno de hoy y lo justifica con los números."""
     # Sin historial suficiente no se recomienda nada: sería inventar.
     if not chronic or chronic <= 0:
@@ -797,6 +805,11 @@ def make_plan(tsb, acwr, acute, chronic, hrv_today, hrv30, sleep_secs,
         }
     why = []
     flags_bad = 0
+
+    if fase:
+        why.append(f"Fase de temporada: {fase.get('fase','')} · semana "
+                   f"{fase.get('semana_global','?')}/{fase.get('total_semanas','?')}"
+                   f"{' (descarga)' if fase.get('deload') else ''}. {fase.get('foco','')}")
 
     if hrv_today is not None and hrv30:
         pct = (hrv_today - hrv30) / hrv30 * 100
@@ -942,11 +955,28 @@ def make_plan(tsb, acwr, acute, chronic, hrv_today, hrv30, sleep_secs,
         ]
         est = 70
 
+    # ---- semana de descarga (deload) del macrociclo: nada de días duros,
+    # se recorta el volumen para asimilar y cortar la monotonía.
+    if fase and fase.get("deload") and kind in ("intensidad", "tempo"):
+        why.append(f"Semana de descarga del bloque {fase.get('fase','')} (semana "
+                   f"{fase.get('semana_global','?')}/{fase.get('total_semanas','?')}): "
+                   "esta semana no hay días duros, se baja la carga para asimilar y romper la monotonía.")
+        kind = "resistencia"
+        title = "Fondo suave Z2 (semana de descarga)"
+        steps = [
+            {"phase": "Calentamiento", "desc": "10 min Z1 → Z2."},
+            {"phase": "Bloque principal", "desc": "40–60 min en Z2 tranquila, terreno rodador, sin picos."},
+            {"phase": "Vuelta a la calma", "desc": "10 min en Z1."},
+        ]
+        est = 55
+
     # ---- guardarraíl de polarización 80/20 (Seiler): si ya gastaste el
     # presupuesto de intensidad de la semana, hoy toca Z2 aunque estés fresco.
-    if kind in ("intensidad", "tempo") and polar and polar.get("high_pct", 0) >= 30:
+    # El techo depende de la fase (Base más estricta, Construcción más permisiva).
+    cap_high = (fase or {}).get("cap_high", 30)
+    if kind in ("intensidad", "tempo") and polar and polar.get("high_pct", 0) >= cap_high:
         why.append(f"Ya llevás {polar['high_pct']}% del tiempo de la semana en intensidad alta "
-                   "(la referencia polarizada es ~20% o menos). Cambio el día de calidad por "
+                   f"(techo de esta fase: {cap_high}%). Cambio el día de calidad por "
                    "fondo Z2: así protejo el 80/20 y llegás fresco a la próxima sesión dura.")
         kind = "resistencia"
         title = "Fondo aeróbico Z2 (protegiendo el 80/20)"
