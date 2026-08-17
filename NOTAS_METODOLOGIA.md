@@ -87,3 +87,45 @@ Este archivo es memoria de referencia para decisiones futuras del proyecto.
 - **Nutrición intra-entreno MTB cuantificada** (Oosthuyse): usar 30–60 g/h (<2.5 h) y 60–90 g/h (>2.5 h) con maltodextrina:fructosa 2:1; proteína en fondos largos; cafeína 3–6 mg/kg. Integrado en las tarjetas de nutrición.
 - **HIIT**: priorizar tiempo cerca de VO2max (4×4). **Umbral/OBLA**: incluir trabajo de umbral para MTB (Viana).
 - **Hidratación reforzada en calor**.
+
+## Composición corporal y pérdida de grasa (búsqueda web + Consensus, ago 2026)
+
+Enfoque elegido por Emanuel: **balanceado** (déficit chico solo en días suaves/descanso;
+comer completo en calidad/fondos) y **sin cambiar la estructura del entrenamiento** (la
+grasa se maneja por nutrición + seguimiento). Hallazgo: intervals.icu ya recibe `bodyFat`
+y `fatTotal` de la balanza Femmto, pero la app no los usaba → ahora se leen, se tendencian
+y se muestran.
+
+Evidencia clave:
+- **Arriel 2020 (MTB amateur)**: la potencia relativa (W/kg) correlaciona negativo con % de
+  grasa pero NO con masa magra → es la grasa la que frena, sacar grasa sube potencia/kg.
+- **de Moura 2025** (ya en base): tiempo de carrera +0.415 con % grasa, −0.427 con músculo.
+- **Alejo 2022**: los ciclistas pro son más magros y con más músculo que juniors.
+- **Proteína en el déficit (Mettler 2010; Longland 2016; Witard 2019; ISSN)**: 1.6–2.0 g/kg/día
+  preservan masa magra (con poca proteína se pierde músculo; con alta + entreno se preserva/gana).
+- **Baja disponibilidad energética / REDs (IOC-REDs Mathisen 2023; Woods 2018)**: por debajo
+  de ~30 kcal/kg masa magra/día caen RMR, hormonas y rendimiento. Déficit solo en días fáciles,
+  pérdida gradual ~0.5%/sem. Medir % grasa como tendencia de semanas, no a diario.
+
+Reglas incorporadas:
+- Nuevos objetivos: % de grasa (−3 pts/12 sem) y masa magra (mantener/subir).
+- Nutrición días fáciles: objetivo de proteína 1.6–2.0 g/kg + marco de déficit.
+- Guardarraíl REDs en health_signals: peso bajando >1%/sem + FC reposo↑/HRV↓ → aviso de comer más.
+- Principios nuevos en evidencia.py: composicion_corporal (reforzado con Arriel),
+  proteina_deficit, energia_disponible.
+
+## Control de la carga (Cragnulini 2013, PubliCE) — leído ago 2026
+
+Revisión de cuantificación de carga en ciclismo. **Confirma la metodología de la app** (no
+es un cambio de rumbo):
+- Carga = volumen × frecuencia × intensidad; en resistencia el TIEMPO importa más que la
+  distancia (ciclismo es tiempo- e intensidad-dependiente).
+- **Ningún parámetro solo alcanza**: FC = estrés central; potencia/RPE = intensidad periférica.
+  Lo correcto es cruzar varios. Sin potenciómetro → FC + RPE (lo que ya hace la app).
+- **FC**: lineal con la intensidad submáxima, pero se distorsiona con calor, deshidratación
+  (+7.5%), variación día a día (2–4 lpm), posición y pendiente. **Deriva cardíaca** en salidas
+  largas: la FC sube y baja la potencia para sostener la zona (justo lo que mide el desacople).
+  La FC responde con retardo → no sirve para intervalos 30/30; ahí manda el RPE.
+- **RPE (Borg/OMNI-RPE, validado en ciclismo)**: barato, práctico y MÁS sensible para prevenir
+  el sobreentrenamiento; mejora con el autoconocimiento del ciclista.
+- Regla incorporada: principio `carga_multiparametrica` en evidencia.py (FC + RPE + sensaciones).

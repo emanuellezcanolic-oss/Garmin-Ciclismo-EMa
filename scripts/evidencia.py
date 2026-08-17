@@ -102,10 +102,34 @@ EVIDENCIA = {
     "composicion_corporal": {
         "cat": "Composición",
         "titulo": "Composición ↔ rendimiento",
-        "principio": "Más grasa se asocia a tiempos más lentos; más masa muscular e hidratación, a tiempos más rápidos. "
-                     "Bajar grasa preservando músculo mejora directamente el rendimiento (y la potencia/kg en MTB). "
-                     "El trabajo interválico ayuda a reducir grasa sin romper el 80/20.",
-        "fuente": "de Moura (83 ciclistas MTB); Poon 2024 (interválico y composición)",
+        "principio": "Es la GRASA la que baja tu potencia/kg, no el músculo: la potencia relativa correlaciona "
+                     "negativo con el % de grasa pero no con la masa magra. Bajar grasa preservando músculo mejora "
+                     "directamente el rendimiento en MTB; el interválico ayuda a reducir grasa sin romper el 80/20.",
+        "fuente": "Arriel 2020; de Moura 2025 (83 ciclistas MTB); Alejo 2022; Poon 2024",
+    },
+    "proteina_deficit": {
+        "cat": "Composición",
+        "titulo": "Proteína alta en el déficit",
+        "principio": "Para perder grasa sin perder músculo, en restricción calórica se apunta a ~1.6-2.0 g/kg/día "
+                     "de proteína repartida en las comidas. Con poca proteína se pierde masa magra; con proteína alta "
+                     "(+ entrenamiento) se preserva o incluso se gana músculo mientras baja la grasa.",
+        "fuente": "ISSN; Mettler 2010; Witard 2019; Longland 2016",
+    },
+    "energia_disponible": {
+        "cat": "Composición",
+        "titulo": "No caer en baja disponibilidad energética (REDs)",
+        "principio": "Por debajo de ~30 kcal/kg de masa magra/día caen el metabolismo, las hormonas y el rendimiento "
+                     "(síndrome REDs). Por eso el déficit va SOLO en días fáciles y se come completo en días duros/fondos, "
+                     "con una pérdida gradual (~0.5%/semana). Bajar demasiado rápido hace perder músculo, no grasa.",
+        "fuente": "IOC-REDs (Mathisen 2023); Woods 2018",
+    },
+    "carga_multiparametrica": {
+        "cat": "Marco",
+        "titulo": "Cuantificar la carga con varios parámetros",
+        "principio": "Ningún indicador solo mide todo: la FC refleja el estrés central (y se distorsiona con calor, "
+                     "deshidratación y deriva cardíaca), mientras la potencia/RPE reflejan la intensidad periférica. "
+                     "Sin potenciómetro, lo correcto en el campo es cruzar FC + RPE (+ sensaciones).",
+        "fuente": "Cragnulini 2013; Mujika 2006; Jeukendrup 2002",
     },
     # ---------------- Técnica ----------------
     "cadencia_libre": {
@@ -128,8 +152,8 @@ EVIDENCIA = {
 # Qué principios respaldan cada tipo de sesión del planificador.
 PLAN_EVIDENCIA = {
     "resistencia": ["base_aerobica_z2", "polarizacion_80_20", "especificidad_mtb", "nutricion_intra"],
-    "suave":       ["recuperacion_multivariable", "polarizacion_80_20"],
-    "descanso":    ["recuperacion_multivariable", "monotonia_foster"],
+    "suave":       ["recuperacion_multivariable", "polarizacion_80_20", "composicion_corporal", "proteina_deficit", "energia_disponible"],
+    "descanso":    ["recuperacion_multivariable", "monotonia_foster", "composicion_corporal", "proteina_deficit", "energia_disponible"],
     "tempo":       ["umbral_obla", "polarizacion_80_20", "acwr_gabbett"],
     "intensidad":  ["hit_vo2max", "polarizacion_80_20", "composicion_corporal"],
     "test":        ["sit_test_umbral", "doble_umbral"],

@@ -321,10 +321,21 @@ def build(wellness, activities, athlete):
             "sleep_score": num(w.get("sleepScore")),
             "readiness": num(w.get("readiness")),
             "weight": num(w.get("weight")),
+            "body_fat": num(w.get("bodyFat")),
+            "fat_mass": num(w.get("fatTotal")),
             "vo2max": num(w.get("vo2max")),
             "stress": num(w.get("stress")),
             "hydration_ml": num(w.get("hydrationVolume")) or num(w.get("hydration")),
         }
+        # masa magra (músculo + resto no graso): de fatTotal si está, si no de %grasa
+        wt, bf, fm = days[d]["weight"], days[d]["body_fat"], days[d]["fat_mass"]
+        if wt and fm is not None:
+            days[d]["lean"] = round(wt - fm, 1)
+        elif wt and bf is not None:
+            days[d]["fat_mass"] = round(wt * bf / 100, 1)
+            days[d]["lean"] = round(wt * (1 - bf / 100), 1)
+        else:
+            days[d]["lean"] = None
 
     # ---------- actividades de ciclismo
     rides = []
@@ -412,6 +423,33 @@ def build(wellness, activities, athlete):
     if len(weights) >= 8:
         old = weights[7:35] or weights[7:]
         weight_delta30 = round((sum(weights[:7]) / len(weights[:7])) - (sum(old) / len(old)), 1)
+
+    # ---- composición corporal (de la balanza inteligente, vía Garmin)
+    def delta30(series):
+        if len(series) < 8:
+            return None
+        old = series[7:35] or series[7:]
+        return round((sum(series[:7]) / len(series[:7])) - (sum(old) / len(old)), 1)
+
+    bfs = recent("body_fat", 90)
+    body_fat_last = round(bfs[0], 1) if bfs else None
+    body_fat7 = avg(bfs[:7]) if bfs else None
+    body_fat_delta30 = delta30(bfs)
+    leans = recent("lean", 90)
+    lean_last = round(leans[0], 1) if leans else None
+    lean7 = avg(leans[:7]) if leans else None
+    lean_delta30 = delta30(leans)
+    fats = recent("fat_mass", 90)
+    fat_mass_last = round(fats[0], 1) if fats else None
+    fat_mass_delta30 = delta30(fats)
+
+    # ritmo de pérdida de peso semana a semana (%/sem) para el guardarraíl REDs
+    weight_wk_pct = None
+    if len(weights) >= 14:
+        last7, prev7 = sum(weights[:7]) / 7, sum(weights[7:14]) / 7
+        if prev7:
+            weight_wk_pct = round((last7 - prev7) / prev7 * 100, 2)
+
     stress7 = avg(recent("stress", 7))
     rhr3 = avg(recent("resting_hr", 3))
     hrv3 = avg(recent("hrv", 3))
@@ -432,7 +470,9 @@ def build(wellness, activities, athlete):
     hydration_today = today_w.get("hydration_ml") or yesterday_w.get("hydration_ml")
     health = health_signals(rhr3, rhr30, rhr_last, hrv3, hrv30,
                             stress3, stress7, sleep3, tsb_now,
-                            weight_last, weight7, hydration_today, day_load(1))
+                            weight_last, weight7, hydration_today, day_load(1),
+                            weight_wk_pct=weight_wk_pct)
+    print(f"Composición: {json.dumps({'body_fat': body_fat_last, 'fat_mass': fat_mass_last, 'lean': lean_last, 'bf_delta30': body_fat_delta30, 'lean_delta30': lean_delta30, 'weight_wk_pct': weight_wk_pct}, ensure_ascii=False)}")
 
     # ---------- calidad (se calcula antes del plan para respetar el 80/20)
     quality = training_quality(activities, load_by_day)
@@ -451,7 +491,7 @@ def build(wellness, activities, athlete):
         polar=quality.get("polarization"), fase=fase,
     )
     plan["route"] = suggest_route(plan, rides)
-    plan["nutrition"] = nutrition_tips(plan["kind"])
+    plan["nutrition"] = nutrition_tips(plan["kind"], weight=weight_last)
     plan["evidencia"] = evidencia_para_plan(plan["kind"])
     plan["fase"] = {"nombre": fase["fase"], "semana_global": fase["semana_global"],
                     "total_semanas": fase["total_semanas"], "deload": fase["deload"]}
@@ -523,12 +563,16 @@ def build(wellness, activities, athlete):
             "sleep_secs": sleep_today, "sleep_score": sleep_score_today,
             "readiness": readiness_today,
             "weight": weight_last, "weight7": weight7, "weight_delta30": weight_delta30,
+            "body_fat": body_fat_last, "body_fat7": body_fat7, "body_fat_delta30": body_fat_delta30,
+            "fat_mass": fat_mass_last, "fat_mass_delta30": fat_mass_delta30,
+            "lean": lean_last, "lean7": lean7, "lean_delta30": lean_delta30,
             "vo2max": vo2_last, "vo2max_delta90": vo2_delta90,
             "stress": today_w.get("stress") or yesterday_w.get("stress"), "stress7": stress7,
         },
         "plan": plan,
         "goals": make_goals({
             "ctl": ctl_now, "vo2max": vo2_last, "weight": weight_last,
+            "body_fat": body_fat_last, "lean": lean_last,
         }),
         "health": health,
         "overtraining": overtraining,
@@ -544,17 +588,25 @@ def build(wellness, activities, athlete):
     }
 
 
-def nutrition_tips(kind):
+def nutrition_tips(kind, weight=None):
     """Guía nutricional del día según el entreno, basada en la estrategia de
     la Lic. Zalazar (plan personal del atleta): fórmulas de comidas, timing
-    pre/intra/post y regla de las 3R."""
+    pre/intra/post y regla de las 3R. En días fáciles suma el marco de déficit
+    moderado con proteína alta para perder grasa preservando músculo."""
     base = [
         "Agua: 3 litros en el día (orina clara como control).",
         "Almuerzo y cena: 50% del plato de verduras (3 colores, al menos 1 tipo B) + proteína magra + hidratos de calidad (legumbres/granos de tu guía).",
     ]
+    # objetivo de proteína para preservar músculo en el déficit (1.6-2.0 g/kg)
+    prot = ""
+    if weight:
+        prot = (f" Apuntá a ~{round(weight*1.6)}-{round(weight*2.0)} g de proteína en el día "
+                "(repartida en las comidas): es lo que preserva el músculo cuando comés en déficit "
+                "(ISSN; Mettler 2010; Witard 2019).")
     if kind in ("descanso", "sin_datos", "suave"):
         return base + [
-            "Día liviano: hidratos en cantidad INFERIOR en almuerzo; sin extras energéticos (frutos secos/pasta de maní solo si hay hambre real).",
+            "Día liviano = ventana para el déficit: hidratos en cantidad INFERIOR en almuerzo; sin extras energéticos (frutos secos/pasta de maní solo si hay hambre real)." + prot,
+            "Priorizá proteína en cada comida y el Z2 suave: es el mejor quema-grasa sostenible sin robarle recuperación al entrenamiento.",
             "Desayuno/merienda: fruta + proteína + lácteo descremado + hidrato integral.",
         ]
     if kind == "resistencia":
@@ -598,13 +650,33 @@ def make_goals(today):
         goals.append({
             "metric": "Peso",
             "current": w, "target": round(w - 6, 1), "by": horizon,
-            "note": "-0.5 kg/semana (0.4-0.5% del peso corporal): preserva músculo y rendimiento. En MTB cada kg menos es potencia/kg gratis.",
+            "note": "-0.5%/semana: el objetivo es bajar GRASA, no músculo. En MTB cada kg de grasa menos es potencia/kg gratis.",
         })
     else:
         goals.append({
             "metric": "Peso",
             "current": None, "target": None, "by": None,
             "note": "Cargá tu peso en Garmin Connect (2-3 veces/semana, en ayunas) y el objetivo se calcula solo.",
+        })
+    bf = today.get("body_fat")
+    if bf is not None:
+        goals.append({
+            "metric": "% de grasa",
+            "current": bf, "target": round(max(bf - 3, 12), 1), "by": horizon,
+            "note": "Es la grasa la que baja tu potencia/kg, no el músculo (Arriel 2020; de Moura 2025). Bajar ~3 puntos en 12 sem es realista y seguro (~0.5%/sem de peso).",
+        })
+    else:
+        goals.append({
+            "metric": "% de grasa",
+            "current": None, "target": None, "by": None,
+            "note": "Pesate en tu balanza Femmto 2-3 veces/semana (en ayunas): cuando el % de grasa llegue a intervals.icu, el objetivo se calcula solo.",
+        })
+    lean = today.get("lean")
+    if lean is not None:
+        goals.append({
+            "metric": "Masa magra (músculo)",
+            "current": lean, "target": lean, "by": horizon,
+            "note": "Objetivo: MANTENERLA (o subir levemente) mientras baja la grasa. Se logra con proteína 1.6-2.0 g/kg y sin déficit en días duros (ISSN; IOC-REDs).",
         })
     goals.append({
         "metric": "Umbral (LTHR)",
@@ -616,7 +688,7 @@ def make_goals(today):
 
 def health_signals(rhr3, rhr30, rhr_last, hrv3, hrv30, stress3, stress7,
                    sleep3_secs, tsb, weight_last, weight7, hydration_ml,
-                   yesterday_load):
+                   yesterday_load, weight_wk_pct=None):
     """TAMIZAJE (no diagnóstico): marca desvíos respecto a la línea de base
     del propio atleta que ameritan atención o consulta médica.
 
@@ -685,6 +757,17 @@ def health_signals(rhr3, rhr30, rhr_last, hrv3, hrv30, stress3, stress7,
     if hydration_ml is not None and hydration_ml > 0 and hydration_ml < 2000:
         flags.append({"level": "info",
             "text": f"Tomaste {hydration_ml/1000:.1f} L registrados hoy, por debajo de tu meta de 3 L. Sumá líquidos."})
+
+    # 9) BAJA DISPONIBILIDAD ENERGÉTICA (REDs): peso bajando rápido (>1%/sem)
+    #    JUNTO CON señales de fatiga fisiológica. Red de seguridad para que el
+    #    déficit no se convierta en pérdida de rendimiento/salud (IOC-REDs; Woods 2018).
+    if weight_wk_pct is not None and weight_wk_pct <= -1.0 and (
+            (rhr_up is not None and rhr_up >= 5) or (hrv_pct is not None and hrv_pct <= -8)):
+        flags.append({"level": "serious",
+            "text": f"Posible baja disponibilidad energética: estás bajando peso rápido "
+                    f"({abs(weight_wk_pct):.1f}%/semana, más que el objetivo de 0.5%) y con señales de fatiga "
+                    "(FC en reposo ↑ o HRV ↓). Comé MÁS, sobre todo alrededor de los días de carga: el déficit "
+                    "va solo en días suaves. Bajar demasiado rápido hace perder músculo y rendimiento, no grasa."})
 
     # ---------- sugerencias de hidratación (siempre visibles, contextuales)
     suggestions = [

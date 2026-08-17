@@ -239,6 +239,9 @@ async function init() {
   // ---- periodización
   renderPeriodizacion(data.periodizacion);
 
+  // ---- composición corporal
+  renderComposicion(t);
+
   // ---- base científica
   const eb = $("evidence-body");
   const groups = data.evidencia || [];
@@ -290,6 +293,40 @@ async function init() {
   $("footer-note").textContent =
     `Datos vía intervals.icu (sincronizado con tu Garmin). Se actualiza solo cada 3 horas. ` +
     `${data.counts.rides_180d} salidas y ${data.counts.wellness_days} días de bienestar en 6 meses.`;
+}
+
+// ---------- composición corporal ----------
+function renderComposicion(t) {
+  const el = $("composicion-body");
+  if (!el) return;
+  const hasData = t && (t.body_fat != null || t.lean != null || t.fat_mass != null);
+  if (!hasData) {
+    el.innerHTML = `<p class="hint">Todavía no llega tu composición corporal. Pesate en tu balanza
+      <b>Femmto</b> 2-3 veces por semana (en ayunas, sincronizada a Garmin): cuando el % de grasa y
+      la masa magra lleguen a intervals.icu, esta tarjeta se activa sola y le pone objetivos.</p>`;
+    return;
+  }
+  // delta: para grasa, bajar es bueno; para músculo, subir es bueno
+  const delta = (v, goodDown) => {
+    if (v == null) return `<span class="c-delta">—</span>`;
+    const good = goodDown ? v < 0 : v > 0;
+    const arrow = v < 0 ? "▼" : v > 0 ? "▲" : "•";
+    const cls = v === 0 ? "" : good ? "good" : "bad";
+    return `<span class="c-delta ${cls}">${arrow} ${v > 0 ? "+" : ""}${v} vs mes</span>`;
+  };
+  const box = (label, val, unit, d, goodDown) =>
+    `<div class="comp-kpi"><span class="ck-label">${label}</span>
+      <span class="ck-value">${val != null ? val : "—"}<small>${val != null ? " " + unit : ""}</small></span>
+      ${delta(d, goodDown)}</div>`;
+  el.innerHTML =
+    `<div class="comp-grid">
+      ${box("% de grasa", t.body_fat, "%", t.body_fat_delta30, true)}
+      ${box("Masa grasa", t.fat_mass, "kg", t.fat_mass_delta30, true)}
+      ${box("Masa magra (músculo)", t.lean, "kg", t.lean_delta30, false)}
+    </div>
+    <p class="hint" style="margin-top:12px">Es la <b>grasa</b> la que baja tu potencia/kg, no el músculo
+    (Arriel 2020; de Moura 2025). El plan: bajar grasa <b>preservando músculo</b> — mirá la tendencia de
+    semanas, no el número de un día. El objetivo va abajo, en Objetivos.</p>`;
 }
 
 // ---------- periodización ----------
