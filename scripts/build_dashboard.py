@@ -29,6 +29,13 @@ CYCLING_TYPES = {
     "EMountainBikeRide", "TrackRide", "Handcycle", "Velomobile",
 }
 
+# ---- Preferencias del atleta (Emanuel) — calibran el planificador ----
+DIAS_OBJETIVO = 6            # días/semana que quiere entrenar (5 carga + 1 recuperación)
+DUR_NORMAL = "60-90 min"     # día normal entre semana
+DUR_LARGO = "2-3 h"          # fondo largo (fin de semana)
+DUR_SUAVE = "45-60 min"      # días fáciles / recuperación activa (nada de 20-30 min)
+DIA_LARGO = (5, 6)           # sáb/dom = día de fondo largo (weekday(): lun=0 … dom=6)
+
 
 def get(path, **params):
     r = requests.get(f"{API}{path}", auth=AUTH, params=params, timeout=60)
@@ -531,6 +538,12 @@ def build(wellness, activities, athlete):
     fase = fase_actual(TODAY, ctl=ctl_now, chronic_weekly=chronic if chronic else None)
     print(f"Periodización: {json.dumps(fase, ensure_ascii=False)}")
 
+    # ---------- checklist de sobreentrenamiento (semáforo) — antes del plan,
+    # para que los días fáciles respeten "lo que diga el semáforo"
+    overtraining = overtraining_check(
+        rhr3, rhr30, hrv3, hrv30, tsb_now, quality.get("monotony"), acwr, sleep3)
+    print(f"Sobreentrenamiento: {json.dumps(overtraining, ensure_ascii=False)}")
+
     # ---------- plan del día (fase 3: decisión basada en datos)
     plan = make_plan(
         tsb=tsb_now, acwr=acwr, acute=acute, chronic=chronic,
@@ -538,6 +551,7 @@ def build(wellness, activities, athlete):
         sleep_score=sleep_score_today, readiness=readiness_today,
         load_recent=[day_load(i) for i in range(7)],
         polar=quality.get("polarization"), fase=fase,
+        ot_level=overtraining.get("level"),
     )
     plan["route"] = suggest_route(plan, rides)
     plan["nutrition"] = nutrition_tips(plan["kind"], weight=weight_last)
@@ -547,11 +561,6 @@ def build(wellness, activities, athlete):
     lthr_est = estimate_lthr(rides)
     if lthr_est:
         print(f"LTHR estimado: {json.dumps(lthr_est, ensure_ascii=False)}")
-
-    # ---------- checklist de sobreentrenamiento (semáforo)
-    overtraining = overtraining_check(
-        rhr3, rhr30, hrv3, hrv30, tsb_now, quality.get("monotony"), acwr, sleep3)
-    print(f"Sobreentrenamiento: {json.dumps(overtraining, ensure_ascii=False)}")
 
     # ---- carga subjetiva (sRPE) desde el RPE/Feel que cargás en el reloj
     rpe_rides = [r for r in rides if r.get("rpe") and r.get("moving_time_s")]
@@ -924,7 +933,7 @@ def overtraining_check(rhr3, rhr30, hrv3, hrv30, tsb, monotony, acwr, sleep3_sec
 
 
 def make_plan(tsb, acwr, acute, chronic, hrv_today, hrv30, sleep_secs,
-              sleep_score, readiness, load_recent, polar=None, fase=None):
+              sleep_score, readiness, load_recent, polar=None, fase=None, ot_level=None):
     """Decide el entreno de hoy y lo justifica con los números."""
     # Sin historial suficiente no se recomienda nada: sería inventar.
     if not chronic or chronic <= 0:
@@ -992,18 +1001,36 @@ def make_plan(tsb, acwr, acute, chronic, hrv_today, hrv30, sleep_secs,
         else:
             why.append(f"TSB {tsb}: forma/frescura razonable.")
 
-    # frecuencia objetivo: 4-5 días/semana → con 5+ días ya pedaleados, toca descanso
+    # frecuencia objetivo (preferencia del atleta): al llegar al tope de días
+    # pedaleados de la semana, el día extra depende del semáforo:
+    #   verde  → recuperación activa Z2 real (no descanso pelado)
+    #   ámbar/rojo → descanso total
     days_ridden = sum(1 for load in load_recent if load and load > 0)
     yesterday_load = load_recent[1] if len(load_recent) > 1 else 0
-    if days_ridden >= 5 and flags_bad < 3:
-        why.append(f"Ya pedaleaste {days_ridden} de los últimos 7 días (tu objetivo es 4-5): "
-                   "el descanso de hoy es parte del plan, ahí es donde el cuerpo asimila.")
+    if days_ridden >= DIAS_OBJETIVO and flags_bad < 3:
+        if ot_level == "green":
+            why.append(f"Ya pedaleaste {days_ridden} de los últimos 7 días (tu objetivo son {DIAS_OBJETIVO}), "
+                       "pero el semáforo está verde: en vez de parar del todo, rodaje suave regenerativo "
+                       "que suma volumen aeróbico sin robar recuperación.")
+            return {
+                "kind": "suave",
+                "title": f"Recuperación activa Z2 ({DUR_SUAVE})",
+                "steps": [
+                    {"phase": "Calentamiento", "desc": "10 min en Z1, cadencia cómoda."},
+                    {"phase": "Bloque principal", "desc": f"{DUR_SUAVE} en Z2 baja, terreno llano o rodador. Tenés que poder charlar de corrido; nada de subidas fuertes."},
+                    {"phase": "Vuelta a la calma", "desc": "5-10 min en Z1."},
+                ],
+                "est_load": 40, "why": why,
+                "workout_text": "Calentamiento\n- 10m Z1 HR\n\nRodaje regenerativo\n- 45m Z2 HR\n\nVuelta a la calma\n- 5m Z1 HR",
+            }
+        why.append(f"Ya pedaleaste {days_ridden} de los últimos 7 días (tu objetivo son {DIAS_OBJETIVO}) "
+                   "y el semáforo no está en verde: hoy toca descanso, ahí es donde el cuerpo asimila.")
         return {
             "kind": "descanso",
             "title": "Día de descanso programado",
             "steps": [
-                {"phase": "Opción A", "desc": "Descanso total."},
-                {"phase": "Opción B", "desc": "Caminata o vuelta muy suave 20-30 min en Z1, solo para mover las piernas."},
+                {"phase": "Opción A", "desc": "Descanso total (recomendado hoy)."},
+                {"phase": "Opción B", "desc": f"Si querés mover las piernas: rodaje MUY suave {DUR_SUAVE} en Z1, sin exigencia."},
             ],
             "est_load": 0, "why": why, "workout_text": "",
         }
@@ -1037,13 +1064,29 @@ def make_plan(tsb, acwr, acute, chronic, hrv_today, hrv30, sleep_secs,
         why.append(f"Presupuesto de carga para hoy sin pasar ACWR 1.3: ~{budget:.0f} TSS "
                    f"(llevás {sum(load_recent[:6]):.0f} en los últimos 6 días, crónica {chronic:.0f}/sem).")
 
+    # ¿hoy es día de fondo largo? (fin de semana, por preferencia del atleta)
+    es_dia_largo = TODAY.weekday() in DIA_LARGO
+    fondo_dur = DUR_LARGO if es_dia_largo else DUR_NORMAL
+    fondo_est = 135 if es_dia_largo else 75
+
+    def fondo_steps(extra=""):
+        bloque = (f"{fondo_dur} en Z2 sostenida. En MTB: sendero rodador, subidas largas "
+                  "sentado a ritmo constante, sin picos." + (" " + extra if extra else ""))
+        if es_dia_largo:
+            bloque += " Es tu fondo largo: llevá comida e hidratación (ver nutrición)."
+        return [
+            {"phase": "Calentamiento", "desc": "15 min progresivos Z1 → Z2."},
+            {"phase": "Bloque principal", "desc": bloque},
+            {"phase": "Vuelta a la calma", "desc": "10 min en Z1."},
+        ]
+
     # ---------- decisión
     if flags_bad >= 3:
         kind = "descanso"
         title = "Descanso o recuperación activa"
         steps = [
-            {"phase": "Opción A", "desc": "Descanso total."},
-            {"phase": "Opción B", "desc": "Rodillo o vuelta muy suave 30–40 min en Z1 (poder conversar sin esfuerzo), cadencia alta, terreno llano."},
+            {"phase": "Opción A", "desc": "Descanso total (recomendado)."},
+            {"phase": "Opción B", "desc": f"Rodillo o vuelta muy suave {DUR_SUAVE} en Z1 (poder conversar sin esfuerzo), cadencia alta, terreno llano."},
         ]
         est = 20
     elif flags_bad == 2:
@@ -1051,30 +1094,22 @@ def make_plan(tsb, acwr, acute, chronic, hrv_today, hrv30, sleep_secs,
         title = "Rodaje regenerativo Z1–Z2"
         steps = [
             {"phase": "Calentamiento", "desc": "10 min en Z1, cadencia cómoda."},
-            {"phase": "Bloque principal", "desc": "30–45 min en Z2 baja, terreno llano o rodillo. Nada de subidas fuertes hoy."},
+            {"phase": "Bloque principal", "desc": f"{DUR_SUAVE} en Z2 baja, terreno llano o rodillo. Nada de subidas fuertes hoy."},
             {"phase": "Vuelta a la calma", "desc": "5–10 min en Z1."},
         ]
-        est = 40
+        est = 45
     elif tsb is not None and tsb < -10:
         kind = "resistencia"
-        title = "Fondo aeróbico Z2"
-        steps = [
-            {"phase": "Calentamiento", "desc": "15 min progresivos Z1 → Z2."},
-            {"phase": "Bloque principal", "desc": "60–90 min en Z2 sostenida. En MTB: sendero rodador, subidas largas sentado a ritmo constante, sin picos."},
-            {"phase": "Vuelta a la calma", "desc": "10 min en Z1."},
-        ]
-        est = 75
+        title = "Fondo aeróbico Z2" + (" — LARGO" if es_dia_largo else "")
+        steps = fondo_steps()
+        est = fondo_est
     elif yesterday_load >= 120:
         kind = "resistencia"
         title = "Fondo aeróbico Z2 (ayer fue día fuerte)"
         why.append(f"Ayer acumulaste {yesterday_load:.0f} TSS: dos días duros seguidos no suman, "
                    "hoy se rueda en Z2.")
-        steps = [
-            {"phase": "Calentamiento", "desc": "15 min progresivos Z1 → Z2."},
-            {"phase": "Bloque principal", "desc": "60-90 min en Z2 sostenida, sin picos."},
-            {"phase": "Vuelta a la calma", "desc": "10 min en Z1."},
-        ]
-        est = 75
+        steps = fondo_steps()
+        est = fondo_est
     elif tsb is not None and tsb > 5:
         kind = "intensidad"
         title = "Intervalos VO2máx 4×4 (día de calidad)"
@@ -1144,9 +1179,11 @@ def make_plan(tsb, acwr, acute, chronic, hrv_today, hrv30, sleep_secs,
     # que intervals convierte en entreno estructurado y manda a Garmin
     warmup = "Calentamiento\n- 5m Z1 HR\n- 5m Z2 HR\n- 5m Z3 HR\n"
     cooldown = "\nVuelta a la calma\n- 5m Z2 HR\n- 5m Z1 HR"
+    fondo_txt = ("\nFondo largo\n- 60m Z2 HR\n- 60m Z2 HR\n" if es_dia_largo
+                 else "\nFondo aeróbico\n- 40m Z2 HR\n- 20m Z3 HR\n- 15m Z2 HR\n")
     workout_texts = {
-        "suave": "Calentamiento\n- 5m Z1 HR\n- 5m Z2 HR\n\nRodaje regenerativo\n- 30m Z2 HR\n" + cooldown,
-        "resistencia": warmup + "\nFondo aeróbico\n- 40m Z2 HR\n- 20m Z3 HR\n- 15m Z2 HR\n" + cooldown,
+        "suave": "Calentamiento\n- 10m Z1 HR\n\nRodaje regenerativo\n- 45m Z2 HR\n" + cooldown,
+        "resistencia": warmup + fondo_txt + cooldown,
         "intensidad": warmup + "\nIntervalos VO2max 4x\n- 4m Z5 HR\n- 4m Z1 HR\n" + cooldown,
         "tempo": warmup + "\nBloques de tempo 3x\n- 10m Z4 HR\n- 5m Z1 HR\n" + cooldown,
     }
