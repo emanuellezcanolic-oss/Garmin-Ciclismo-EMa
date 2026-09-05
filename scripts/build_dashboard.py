@@ -312,6 +312,26 @@ def num(x):
 
 
 COMP_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "composicion.json")
+SALUD_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "salud.json")
+MEDIDAS_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "medidas.json")
+
+
+def load_json(path, default):
+    try:
+        with open(path, encoding="utf-8") as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"AVISO: no pude leer {os.path.basename(path)} ({e})")
+        return default
+
+
+def sync_peso_medidas(medidas, weight_last):
+    """Mantiene la medida 'peso' en sincronía con el último peso conocido."""
+    if weight_last:
+        for m in medidas:
+            if m.get("key") == "peso":
+                m["value"] = weight_last
+    return medidas
 
 
 def merge_manual_composition(days):
@@ -644,6 +664,8 @@ def build(wellness, activities, athlete):
         "subjective": subjective,
         "alerts": alerts,
         "periodizacion": {"actual": fase, "mapa": mapa_temporada(TODAY)},
+        "salud": load_json(SALUD_PATH, []),
+        "medidas": sync_peso_medidas(load_json(MEDIDAS_PATH, []), weight_last),
         "evidencia": evidencia_agrupada(),
         "series": series,
         "rides": rides[:60],

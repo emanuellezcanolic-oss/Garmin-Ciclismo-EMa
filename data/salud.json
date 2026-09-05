@@ -1,0 +1,58 @@
+[
+ {
+  "fecha": "2026-09-04",
+  "tipo": "Ergometría (12 derivaciones)",
+  "centro": "Centro Médico y Diagnóstico del Sur",
+  "medico": "Dr. Moriniго Ricardo — Cardiología (MN 83210 · MP 2832)",
+  "indicaciones": "Ex CV — deportista (bici + gym)",
+  "antropometria": {"edad": 35, "sexo": "M", "peso_kg": 109, "talla_cm": 184, "imc": 32.2},
+  "resumen": {
+   "protocolo": "WHO-modificado",
+   "fc_reposo": 64,
+   "fc_max_alcanzada": 173,
+   "fc_max_pct": "93% de la prevista (185)",
+   "fc_prevista_max": 185,
+   "pa_reposo": "130/80",
+   "pa_max": "180/80",
+   "doble_producto_max": 31140,
+   "mets_max": 9.1,
+   "vo2_estimado_carga": 32,
+   "carga_max": "1500 kgm/min (~245 W)",
+   "hrr_1min": 21,
+   "recuperacion": "R1 152 · R3 121"
+  },
+  "etapas": [
+   {"etapa": "Reposo", "dur": "00:04", "carga": "0", "mets": 2.0, "fc": 64, "pa": "130/80", "dp": 8320, "st": "0.0"},
+   {"etapa": "Esfuerzo", "dur": "01:49", "carga": "300", "mets": 3.4, "fc": 105, "pa": "140/80", "dp": 14700, "st": "-0.2"},
+   {"etapa": "Esfuerzo", "dur": "01:20", "carga": "600", "mets": 4.8, "fc": 121, "pa": "150/80", "dp": 18150, "st": "-0.1"},
+   {"etapa": "Esfuerzo", "dur": "01:55", "carga": "900", "mets": 6.2, "fc": 144, "pa": "160/80", "dp": 23040, "st": "-0.4"},
+   {"etapa": "Esfuerzo", "dur": "01:09", "carga": "1200", "mets": 7.7, "fc": 159, "pa": "170/80", "dp": 27030, "st": "-0.9"},
+   {"etapa": "Esfuerzo", "dur": "00:57", "carga": "1500", "mets": 9.1, "fc": 173, "pa": "180/80", "dp": 31140, "st": "-1.9"},
+   {"etapa": "Recuperación", "dur": "01:00", "carga": "0", "mets": 2.0, "fc": 152, "pa": "170/80", "dp": 25840, "st": "-1.4"},
+   {"etapa": "Recuperación", "dur": "02:14", "carga": "0", "mets": 2.0, "fc": 121, "pa": "150/80", "dp": 18150, "st": "-0.4"},
+   {"etapa": "Recuperación", "dur": "04:17", "carga": "0", "mets": 2.0, "fc": 117, "pa": "120/80", "dp": 14040, "st": "-0.4"}
+  ],
+  "conclusiones_informe": [
+   "Prueba suficiente, máxima, detenida por protocolo; alcanzó el 91% de la FCMT.",
+   "Normal respuesta presora con adecuada respuesta cronotrópica.",
+   "Normal comportamiento del ST-T.",
+   "Elevada clase funcional. Asintomático.",
+   "Ergometría máxima, normal, sin evidencia específica de isquemia."
+  ],
+  "analisis_entrenador": [
+   "Test válido y máximo: llegaste al 93% de tu FC teórica, detenido por protocolo (no por síntomas). Confiable.",
+   "Corazón sano en el esfuerzo: ST-T normal, sin isquemia, asintomático → habilitado para entrenar fuerte (HIIT, 4×4, sprints). El leve infradesnivel del ST en el pico revierte y tu cardiólogo lo calificó normal; igual conviene control periódico.",
+   "Respuesta cronotrópica adecuada: la FC sube parejo con la carga (64→105→121→144→159→173).",
+   "Presión de esfuerzo normal: sistólica 130→180 (sana; la preocupante sería >210-220), diastólica estable. Doble producto máx 31.140 = buena reserva.",
+   "Recuperación (HRR): 173→152 en el 1er minuto (−21 lpm, >12 es sano). Buen tono parasimpático; es un KPI a seguir (debería subir a >25-30 con mejor forma).",
+   "Capacidad funcional 9.1 METs (~245 W; VO2 por carga ~32 ml/kg/min): buena para tu peso, con margen claro de mejora."
+  ],
+  "datos_entrenamiento": [
+   "FCmáx real ~173 (test) / 176 (histórico Garmin) → cargala en Garmin/intervals; confirmala con el test de 30 min.",
+   "Sin restricciones cardíacas: luz verde para la intensidad del plan.",
+   "HRR 21 lpm: marcador base para el semáforo de recuperación.",
+   "Tu limitante no es el corazón, es la composición corporal + la base aeróbica → confirma el rumbo (bajar grasa, subir Z2)."
+  ],
+  "disclaimer": "Interpretación educativa para el entrenamiento. El estudio lo firma y valida tu cardiólogo (Dr. Moriniго). Ante dolor de pecho, palpitaciones, mareo o falta de aire desproporcionada: pará y consultá."
+ }
+]

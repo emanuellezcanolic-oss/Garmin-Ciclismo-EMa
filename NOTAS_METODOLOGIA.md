@@ -129,3 +129,29 @@ es un cambio de rumbo):
 - **RPE (Borg/OMNI-RPE, validado en ciclismo)**: barato, práctico y MÁS sensible para prevenir
   el sobreentrenamiento; mejora con el autoconocimiento del ciclista.
 - Regla incorporada: principio `carga_multiparametrica` en evidencia.py (FC + RPE + sensaciones).
+
+## Historia de salud — Ergometría (04/09/2026)
+
+Estudio: Ergometría 12 derivaciones, cicloergómetro, protocolo WHO-modificado.
+Centro Médico y Diagnóstico del Sur — Dr. Moriniго Ricardo (MN 83210 / MP 2832).
+Emanuel: 35 años, 109 kg, 184 cm, IMC 32.2.
+
+Datos clave:
+- **FC máx alcanzada 173 lpm** (93% de la teórica 185); FC reposo 64. Histórico Garmin: 176.
+- PA reposo 130/80 → PA máx 180/80 (respuesta presora normal). Doble producto máx 31.140.
+- **9.1 METs máx** (~245 W; VO2 por carga ~32 ml/kg/min). "Elevada clase funcional".
+- **HRR 1 min = −21 lpm** (173→152). R3 121.
+- ST-T normal, sin evidencia de isquemia. Asintomático. Ergometría máxima normal.
+
+Lectura de cardiología deportiva (para el entrenamiento):
+- Test válido y máximo; corazón sano en el esfuerzo → **habilitado para intensidad** (HIIT/4×4/SIT).
+- Respuesta cronotrópica y presora normales; HRR adecuado (KPI a seguir, debería subir con la forma).
+- **FCmáx real ~173-176** → cargar en Garmin/intervals; confirmar con test de 30 min (LTHR).
+- El limitante es composición corporal + base aeróbica, no el corazón → refuerza el rumbo.
+- Una ergometría sin gases/lactato NO da VT1/VT2; para zonas finas, el test de campo.
+- Guardado en la app en Salud/Estudios (data/salud.json) con análisis y disclaimer (lo firma el cardiólogo).
+
+## Sección Medidas (para compras online)
+- data/medidas.json + sección "Medidas" con dibujos de cómo medir (SVG) por prenda: ropa
+  (pecho/cintura/cadera/entrepierna/brazo/bíceps), calzado (pie), guantes (mano largo/contorno),
+  casco (cabeza), + peso y altura. Autoservicio por issue "cargar-medidas" (add_medida.py).

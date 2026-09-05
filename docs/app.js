@@ -258,6 +258,10 @@ async function init() {
   // ---- composición corporal
   renderComposicion(t);
 
+  // ---- salud / estudios + medidas
+  renderSalud(data.salud);
+  renderMedidas(data.medidas);
+
   // ---- base científica
   const eb = $("evidence-body");
   const groups = data.evidencia || [];
@@ -321,6 +325,126 @@ async function init() {
 }
 
 // ---------- composición corporal ----------
+// ---------- salud / estudios ----------
+function renderSalud(salud) {
+  const el = $("salud-body");
+  if (!el) return;
+  if (!Array.isArray(salud) || !salud.length) {
+    el.innerHTML = `<p class="hint">Todavía no hay estudios cargados.</p>`;
+    return;
+  }
+  el.innerHTML = salud.map((s) => {
+    const r = s.resumen || {};
+    const kpis = [
+      ["FC máx", r.fc_max_alcanzada, "lpm", r.fc_max_pct || ""],
+      ["FC reposo", r.fc_reposo, "lpm", ""],
+      ["PA máx", r.pa_max, "", "reposo " + (r.pa_reposo || "—")],
+      ["METS máx", r.mets_max, "", "VO2 ~" + (r.vo2_estimado_carga || "—")],
+      ["HRR 1 min", r.hrr_1min, "lpm", "recuperación"],
+      ["Carga máx", r.carga_max, "", r.protocolo || ""],
+    ].filter((k) => k[1] != null && k[1] !== "");
+    const kpiHtml = kpis.map((k) =>
+      `<div class="rm-tile"><span class="rm-label">${k[0]}</span>
+        <span class="rm-value">${k[1]}${k[2] ? " " + k[2] : ""}</span><span class="rm-sub">${k[3]}</span></div>`).join("");
+    const etapas = (s.etapas || []).map((e) =>
+      `<tr><td>${e.etapa}</td><td>${e.dur}</td><td>${e.carga}</td><td>${e.mets}</td><td>${e.fc}</td><td>${e.pa}</td><td>${e.st}</td></tr>`).join("");
+    // zonas informativas por %FCmáx del estudio
+    const hrmax = r.fc_max_alcanzada;
+    let zonas = "";
+    if (hrmax) {
+      const z = [["Z1 recuperación", .5, .6], ["Z2 aeróbico", .6, .7], ["Z3 tempo", .7, .8], ["Z4 umbral", .8, .9], ["Z5 VO2máx", .9, 1]];
+      zonas = `<div class="rd-block"><div class="rd-title">Zonas por %FC máx (${hrmax} lpm) — informativo</div>
+        <div class="table-wrap"><table><thead><tr><th>Zona</th><th>%FCmáx</th><th>FC (lpm)</th></tr></thead><tbody>` +
+        z.map(([n, a, b]) => `<tr><td>${n}</td><td>${Math.round(a*100)}–${Math.round(b*100)}%</td><td>${Math.round(hrmax*a)}–${Math.round(hrmax*b)}</td></tr>`).join("") +
+        `</tbody></table></div><p class="hint" style="margin-top:6px">Referencia por FC máx. Tus zonas de entrenamiento siguen basadas en el umbral (LTHR); confirmá con el test de 30 min.</p></div>`;
+    }
+    return `<article class="card estudio">
+      <div class="card-eyebrow">${s.fecha} · ${s.centro || ""}</div>
+      <h2>${s.tipo}</h2>
+      <p class="hint">${s.medico || ""}${s.indicaciones ? " · " + s.indicaciones : ""}
+        ${s.antropometria ? ` · ${s.antropometria.edad} años · ${s.antropometria.peso_kg} kg · ${s.antropometria.talla_cm} cm · IMC ${s.antropometria.imc}` : ""}</p>
+      <div class="ride-metrics">${kpiHtml}</div>
+      <div class="rd-block"><div class="rd-title">Etapas del esfuerzo</div>
+        <div class="table-wrap"><table><thead><tr><th>Etapa</th><th>Dur.</th><th>Carga</th><th>METS</th><th>FC</th><th>PA</th><th>ST</th></tr></thead>
+        <tbody>${etapas}</tbody></table></div></div>
+      ${(s.conclusiones_informe || []).length ? `<div class="rd-block"><div class="rd-title">Conclusiones del informe (Dr. Moriniго)</div><ul class="hint-list">${s.conclusiones_informe.map((c) => `<li>${c}</li>`).join("")}</ul></div>` : ""}
+      ${(s.analisis_entrenador || []).length ? `<div class="rd-block sal-analisis"><div class="rd-title">🫀 Análisis del entrenador (cardiología deportiva)</div><ul class="hint-list">${s.analisis_entrenador.map((c) => `<li>${c}</li>`).join("")}</ul></div>` : ""}
+      ${(s.datos_entrenamiento || []).length ? `<div class="rd-block"><div class="rd-title">📌 Datos para tu entrenamiento</div><ul class="hint-list">${s.datos_entrenamiento.map((c) => `<li>${c}</li>`).join("")}</ul></div>` : ""}
+      ${zonas}
+      ${s.disclaimer ? `<p class="hint" style="margin-top:12px;border-left:2px solid var(--amber);padding-left:10px">${s.disclaimer}</p>` : ""}
+    </article>`;
+  }).join("");
+}
+
+// ---------- medidas corporales (con dibujo de cómo medir) ----------
+const ARV = (x, y1, y2) => `<line x1="${x}" y1="${y1}" x2="${x}" y2="${y2}" class="ms-arrow"/><path class="ms-arrow" d="M${x-3} ${y1+6} L${x} ${y1} L${x+3} ${y1+6}"/><path class="ms-arrow" d="M${x-3} ${y2-6} L${x} ${y2} L${x+3} ${y2-6}"/>`;
+const ARH = (y, x1, x2) => `<line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" class="ms-arrow"/><path class="ms-arrow" d="M${x1+6} ${y-3} L${x1} ${y} L${x1+6} ${y+3}"/><path class="ms-arrow" d="M${x2-6} ${y-3} L${x2} ${y} L${x2-6} ${y+3}"/>`;
+const MS = {
+  peso: `<circle cx="60" cy="62" r="34" class="ms-body"/><path class="ms-body" d="M40 62 A20 20 0 0 1 80 62"/><line x1="60" y1="62" x2="72" y2="50" class="ms-arrow"/><circle cx="60" cy="62" r="3" class="ms-arrow"/>`,
+  altura: `<circle cx="42" cy="22" r="9" class="ms-body"/><path class="ms-body" d="M42 31 V66 M42 42 L28 56 M42 42 L56 56 M42 66 L32 100 M42 66 L52 100"/>${ARV(92, 13, 104)}`,
+  pecho: `<path class="ms-body" d="M40 24 Q60 18 80 24 L82 92 Q60 100 38 92 Z"/><path class="ms-body" d="M40 24 L34 40 M80 24 L86 40" fill="none"/><ellipse cx="60" cy="44" rx="26" ry="7" class="ms-dash"/>${ARH(44, 30, 90)}`,
+  cintura: `<path class="ms-body" d="M40 24 Q60 18 80 24 L82 92 Q60 100 38 92 Z"/><ellipse cx="60" cy="66" rx="24" ry="7" class="ms-dash"/>${ARH(66, 32, 88)}`,
+  cadera: `<path class="ms-body" d="M42 24 L78 24 L84 96 L36 96 Z"/><ellipse cx="60" cy="86" rx="27" ry="7" class="ms-dash"/>${ARH(86, 30, 90)}`,
+  entrepierna: `<path class="ms-body" d="M40 20 H80 V44 L72 104 M40 20 V44 L48 104 M60 30 V44"/>${ARV(96, 44, 104)}`,
+  brazo: `<path class="ms-body" d="M40 24 L54 30 L66 64 L60 100"/><circle cx="40" cy="22" r="7" class="ms-body"/>${ARV(92, 30, 100)}`,
+  biceps: `<path class="ms-body" d="M44 24 Q66 30 62 60 L58 100"/><ellipse cx="55" cy="44" rx="16" ry="6" class="ms-dash"/>${ARH(44, 40, 74)}`,
+  pie: `<path class="ms-body" d="M26 74 Q22 58 40 56 L86 60 Q98 62 96 72 Q94 80 80 80 L36 80 Q28 80 26 74 Z"/>${ARH(96, 26, 96)}`,
+  mano_largo: `<path class="ms-body" d="M44 104 L44 60 M52 104 L52 40 M60 104 L60 34 M68 104 L68 42 M40 72 Q30 66 34 78 L44 92 M44 104 L68 104"/>${ARV(96, 34, 104)}`,
+  mano_contorno: `<path class="ms-body" d="M44 104 L44 56 M52 104 L52 40 M60 104 L60 36 M68 104 L68 44 M44 104 L68 104"/><line x1="38" y1="60" x2="74" y2="60" class="ms-dash"/>${ARH(60, 40, 74)}`,
+  cabeza: `<circle cx="60" cy="52" r="30" class="ms-body"/><path class="ms-body" d="M50 60 Q60 68 70 60" fill="none"/><ellipse cx="60" cy="44" rx="31" ry="9" class="ms-dash"/>${ARH(44, 27, 93)}`,
+};
+function measureDiagram(key) {
+  return `<svg class="ms-svg" viewBox="0 0 120 120" aria-hidden="true">${MS[key] || MS.peso}</svg>`;
+}
+function medidaIssueURL(medidas) {
+  const lines = (medidas || []).filter((m) => m.key !== "peso")
+    .map((m) => `${m.key}: ${m.value != null ? m.value : ""}`).join("\n");
+  const body = `Cargá/actualizá tus medidas (en cm; dejá vacío lo que no tengas):\n\n${lines}\n\n` +
+    `_Confirmá con "Submit new issue". El sistema las guarda y actualiza tu sección Medidas._`;
+  return `https://github.com/${REPO}/issues/new?title=${encodeURIComponent("cargar-medidas")}&body=${encodeURIComponent(body)}`;
+}
+function renderMedidas(medidas) {
+  const el = $("medidas-body");
+  if (!el) return;
+  const add = document.getElementById("medidas-add");
+  if (add) add.href = medidaIssueURL(medidas);
+  if (!Array.isArray(medidas) || !medidas.length) {
+    el.innerHTML = `<p class="hint">Todavía no cargaste medidas. Tocá “Cargar / actualizar medidas”.</p>`;
+    return;
+  }
+  const grupos = {};
+  medidas.forEach((m) => { (grupos[m.grupo] = grupos[m.grupo] || []).push(m); });
+  el.innerHTML = Object.entries(grupos).map(([grupo, items]) =>
+    `<div class="med-group"><div class="med-group-title">${grupo}</div>
+      <div class="med-grid">` +
+      items.map((m) => `<div class="med-card">
+        <div class="med-diagram">${measureDiagram(m.svg)}</div>
+        <div class="med-info">
+          <div class="med-top"><span class="med-label">${m.label}</span>
+            <span class="med-value">${m.value != null ? m.value + " " + m.unit : "—"}</span></div>
+          ${m.guia ? `<div class="med-guia">${m.guia}</div>` : ""}
+          <div class="med-how">📐 ${m.como_medir}</div>
+        </div>
+      </div>`).join("") +
+      `</div></div>`).join("");
+}
+
+// ---------- navegación por secciones (sidebar) ----------
+function wireNav() {
+  const items = document.querySelectorAll(".nav-item");
+  const show = (view) => {
+    document.querySelectorAll(".view").forEach((v) => { v.hidden = v.id !== "view-" + view; });
+    items.forEach((i) => i.classList.toggle("active", i.dataset.view === view));
+    try { localStorage.setItem("peloton-view", view); } catch (e) {}
+    window.scrollTo(0, 0);
+  };
+  items.forEach((i) => i.addEventListener("click", () => show(i.dataset.view)));
+  let start = "panel";
+  try { start = localStorage.getItem("peloton-view") || "panel"; } catch (e) {}
+  if (!document.getElementById("view-" + start)) start = "panel";
+  show(start);
+}
+
 function renderComposicion(t) {
   const el = $("composicion-body");
   if (!el) return;
@@ -580,6 +704,8 @@ $("toggle-load-table").addEventListener("click", () => {
 });
 const td = document.getElementById("test-date");
 if (td) td.addEventListener("change", renderTests);
+
+wireNav();
 
 init().catch((err) => {
   console.error("Error al renderizar el dashboard:", err);
