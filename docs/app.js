@@ -396,37 +396,54 @@ const MS = {
 function measureDiagram(key) {
   return `<svg class="ms-svg" viewBox="0 0 120 120" aria-hidden="true">${MS[key] || MS.peso}</svg>`;
 }
-function medidaIssueURL(medidas) {
-  const lines = (medidas || []).filter((m) => m.key !== "peso")
-    .map((m) => `${m.key}: ${m.value != null ? m.value : ""}`).join("\n");
-  const body = `Cargá/actualizá tus medidas (en cm; dejá vacío lo que no tengas):\n\n${lines}\n\n` +
-    `_Confirmá con "Submit new issue". El sistema las guarda y actualiza tu sección Medidas._`;
-  return `https://github.com/${REPO}/issues/new?title=${encodeURIComponent("cargar-medidas")}&body=${encodeURIComponent(body)}`;
+// medidas guardadas en el navegador (localStorage), instantáneo y sin GitHub
+function getMedidasLocal() {
+  try { return JSON.parse(localStorage.getItem("peloton-medidas") || "{}"); } catch (e) { return {}; }
+}
+function setMedidaLocal(key, val) {
+  const all = getMedidasLocal();
+  if (val === "" || val == null) delete all[key]; else all[key] = val;
+  try { localStorage.setItem("peloton-medidas", JSON.stringify(all)); } catch (e) {}
 }
 function renderMedidas(medidas) {
   const el = $("medidas-body");
   if (!el) return;
-  const add = document.getElementById("medidas-add");
-  if (add) add.href = medidaIssueURL(medidas);
   if (!Array.isArray(medidas) || !medidas.length) {
-    el.innerHTML = `<p class="hint">Todavía no cargaste medidas. Tocá “Cargar / actualizar medidas”.</p>`;
+    el.innerHTML = `<p class="hint">Todavía no hay medidas configuradas.</p>`;
     return;
   }
+  const local = getMedidasLocal();
   const grupos = {};
   medidas.forEach((m) => { (grupos[m.grupo] = grupos[m.grupo] || []).push(m); });
   el.innerHTML = Object.entries(grupos).map(([grupo, items]) =>
     `<div class="med-group"><div class="med-group-title">${grupo}</div>
       <div class="med-grid">` +
-      items.map((m) => `<div class="med-card">
-        <div class="med-diagram">${measureDiagram(m.svg)}</div>
-        <div class="med-info">
-          <div class="med-top"><span class="med-label">${m.label}</span>
-            <span class="med-value">${m.value != null ? m.value + " " + m.unit : "—"}</span></div>
-          ${m.guia ? `<div class="med-guia">${m.guia}</div>` : ""}
-          <div class="med-how">📐 ${m.como_medir}</div>
-        </div>
-      </div>`).join("") +
+      items.map((m) => {
+        const val = local[m.key] != null ? local[m.key] : (m.value != null ? m.value : "");
+        const ro = m.key === "peso";  // el peso viene de la balanza
+        const input = ro
+          ? `<span class="med-value">${val !== "" ? val + " " + m.unit : "—"}</span>`
+          : `<span class="med-field"><input class="med-input" type="number" inputmode="decimal" step="0.1" min="0"
+               data-key="${m.key}" value="${val}" placeholder="—"><span class="med-unit">${m.unit}</span>
+               <span class="med-ok" data-ok="${m.key}"></span></span>`;
+        return `<div class="med-card">
+          <div class="med-diagram">${measureDiagram(m.svg)}</div>
+          <div class="med-info">
+            <div class="med-top"><span class="med-label">${m.label}</span>${input}</div>
+            ${m.guia ? `<div class="med-guia">${m.guia}</div>` : ""}
+            <div class="med-how">📐 ${m.como_medir}${ro ? " Se sincroniza desde tu balanza (Composición)." : ""}</div>
+          </div>
+        </div>`;
+      }).join("") +
       `</div></div>`).join("");
+
+  el.oninput = (ev) => {
+    const inp = ev.target.closest(".med-input");
+    if (!inp) return;
+    setMedidaLocal(inp.dataset.key, inp.value.trim());
+    const ok = el.querySelector(`[data-ok="${inp.dataset.key}"]`);
+    if (ok) { ok.textContent = "✓ guardado"; clearTimeout(ok._t); ok._t = setTimeout(() => { ok.textContent = ""; }, 1500); }
+  };
 }
 
 // ---------- navegación por secciones (sidebar) ----------

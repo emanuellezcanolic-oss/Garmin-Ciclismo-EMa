@@ -443,3 +443,11 @@ details li { margin: 5px 0; }
 .med-value { font-family: var(--mono); font-weight: 700; color: #fff; white-space: nowrap; }
 .med-guia { font-size: 0.72rem; color: var(--accent-2); margin-top: 3px; }
 .med-how { font-size: 0.75rem; color: var(--muted); margin-top: 6px; }
+
+/* Medidas — carga directa en la app */
+.med-field { display: inline-flex; align-items: baseline; gap: 4px; }
+.med-input { width: 62px; background: var(--bg-2); color: #fff; border: 1px solid var(--line-2); border-radius: 8px; padding: 4px 7px; font-family: var(--mono); font-weight: 700; font-size: 0.95rem; text-align: right; }
+.med-input:focus { outline: none; border-color: var(--accent); }
+.med-input::-webkit-outer-spin-button, .med-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.med-unit { font-size: 0.72rem; color: var(--muted); }
+.med-ok { display: block; font-family: var(--mono); font-size: 0.62rem; color: var(--green); height: 0.7rem; margin-top: 2px; text-align: right; }
