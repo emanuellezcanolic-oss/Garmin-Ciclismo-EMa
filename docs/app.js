@@ -19,6 +19,15 @@ function goalProgress(g) {
   return { pct, txt: pct >= 100 ? "✓ cumplido" : `faltan ${left}${u}` };
 }
 
+// lectura de DFA α1 (Rogers 2021): ≥0.9 muy fresco · ~0.75 umbral aeróbico · <0.5 intenso
+function alpha1Read(a) {
+  if (a == null) return "";
+  if (a >= 0.9) return "muy fácil / fresco";
+  if (a >= 0.75) return "en umbral aeróbico (Z2 alta)";
+  if (a >= 0.5) return "por encima del umbral (intensidad)";
+  return "alta intensidad";
+}
+
 const KIND_TAG = {
   descanso: "descanso", suave: "recuperación", resistencia: "base",
   tempo: "tempo", intensidad: "calidad", test: "test", sin_datos: "—",
@@ -29,6 +38,7 @@ const ALERT_ICONS = { info: "ℹ️", warning: "⚠️", serious: "🟠", critic
 const TESTS = [
   ["lthr_30", "Umbral 30 min (Friel)", "Tu FC de umbral (LTHR); recalibra tus zonas. El patrón oro de campo."],
   ["vt_step", "Umbrales VT1/VT2 (escalonado)", "Ubica tus DOS umbrales con la prueba del habla + FC. El más completo."],
+  ["dfa_ramp", "DFA α1 · rampa (HRM 600)", "Umbral aeróbico (VT1) por variabilidad de la FC. Con la banda: el techo real de tu Z2 sin laboratorio."],
   ["test_20", "20 min (umbral)", "Versión más corta del test de umbral, algo menos precisa."],
   ["test_5", "5 min máximo", "Capacidad aeróbica máxima (proxy de VO2máx / potencia aeróbica)."],
   ["cooper_12", "Cooper 12 min", "VO2máx estimado por la distancia en 12 min. En terreno llano."],
@@ -248,6 +258,9 @@ async function init() {
       <div class="zone-rows">${rows}</div>
       <p class="hint" style="margin-top:12px"><b>PROVISORIO — todavía no fijado como referencia.</b> ${lthr.note} Salida usada: ${lthr.name || ""} (${lthr.date || ""}).</p>`;
   }
+
+  // ---- DFA α1 (banda HRM 600): umbral aeróbico + durabilidad
+  renderDfa(data.dfa);
 
   // ---- tests (tiles que abren un issue pre-cargado)
   renderTests();
@@ -547,6 +560,41 @@ function issueURL(key, dateStr) {
   body += `\n_Confirmá tocando el botón verde "Submit new issue". El sistema lo carga en tu reloj y cierra este aviso solo._`;
   return `https://github.com/${REPO}/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
 }
+// ---------- DFA α1 (banda HRM 600) ----------
+function dfaSparkline(trend) {
+  if (!Array.isArray(trend) || trend.length < 2) return "";
+  const vals = trend.map((p) => p.aet);
+  const min = Math.min(...vals), max = Math.max(...vals);
+  const W = 200, H = 44, pad = 4;
+  const x = (i) => pad + (i * (W - 2 * pad)) / (trend.length - 1);
+  const y = (v) => H - pad - ((v - min) / (max - min || 1)) * (H - 2 * pad);
+  const pts = trend.map((p, i) => `${x(i).toFixed(1)},${y(p.aet).toFixed(1)}`).join(" ");
+  const dots = trend.map((p, i) => `<circle cx="${x(i).toFixed(1)}" cy="${y(p.aet).toFixed(1)}" r="2.6" fill="var(--ctl)"><title>${p.date}: ${p.aet} lpm</title></circle>`).join("");
+  return `<svg class="dfa-spark" viewBox="0 0 ${W} ${H}" role="img" aria-label="Tendencia del umbral aeróbico">
+    <polyline points="${pts}" fill="none" stroke="var(--ctl)" stroke-width="2" stroke-linejoin="round"/>${dots}</svg>`;
+}
+function renderDfa(dfa) {
+  const el = $("dfa-body");
+  if (!el) return;
+  if (!dfa) {
+    el.innerHTML = `<p class="hint">Todavía sin datos de variabilidad latido a latido. Salí a pedalear con
+      la <b>banda HRM 600</b> puesta (no el sensor de muñeca) y en la próxima actualización aparece acá tu
+      <b>umbral aeróbico</b>. El valor más preciso sale del <b>test DFA α1 · rampa</b> (arriba en Tests).</p>`;
+    return;
+  }
+  const tiles =
+    metricTile("Umbral aeróbico · AeT", dfa.aet_hr != null ? dfa.aet_hr + " lpm" : null, "techo real de tu Z2 (α1≈0.75)") +
+    metricTile("Umbral anaeróbico · VT2", dfa.vt2_hr != null ? dfa.vt2_hr + " lpm" : null, "α1≈0.5") +
+    metricTile("α1 última salida", dfa.last_alpha1 != null ? dfa.last_alpha1.toFixed(2) : null, dfa.interpretacion || "durabilidad") +
+    metricTile("Salidas con banda", dfa.rides_with_rr != null ? dfa.rides_with_rr : null, "usadas para el cálculo");
+  const q = { buena: "✅ buena", baja: "⚠️ baja (orientativa)", "no cruzó umbral": "sin cruce de umbral", insuficiente: "datos insuficientes", "sin datos": "sin datos" }[dfa.quality] || dfa.quality;
+  const spark = dfa.trend && dfa.trend.length >= 2
+    ? `<div class="dfa-trend"><div class="rd-title">Tendencia del umbral aeróbico (AeT)</div>${dfaSparkline(dfa.trend)}<span class="tile-sub">${dfa.trend.length} salidas con banda · cada punto es una salida</span></div>`
+    : "";
+  el.innerHTML = `<div class="ride-metrics">${tiles}</div>${spark}
+    <p class="hint" style="margin-top:12px">Calidad de la estimación: <b>${q}</b>${dfa.source ? " · última salida usada " + dfa.source : ""}. ${dfa.note || ""}</p>`;
+}
+
 function renderTests() {
   const dateStr = ($("test-date").value || "").trim();
   const grid = $("tests-grid");
@@ -633,7 +681,9 @@ function renderRideDetail(r) {
     metricTile("Calorías", r.calories != null ? Math.round(r.calories) + " kcal" : null) +
     metricTile("RPE / sensación", r.rpe != null ? r.rpe + "/10" : null, r.feel != null ? "feel " + r.feel + "/5" : "") +
     metricTile("Desacople", r.decoupling != null ? r.decoupling.toFixed(1) + "%" : null, r.decoupling != null ? (r.decoupling < 5 ? "buena durabilidad" : "se te desacopló") : "") +
-    metricTile("Potencia media", r.avg_watts != null ? Math.round(r.avg_watts) + " W" : null, r.np_watts != null ? "NP " + Math.round(r.np_watts) : "");
+    metricTile("Potencia media", r.avg_watts != null ? Math.round(r.avg_watts) + " W" : null, r.np_watts != null ? "NP " + Math.round(r.np_watts) : "") +
+    metricTile("Respiración", r.respiration != null ? Math.round(r.respiration) + " rpm" : null, "respiraciones/min") +
+    metricTile("DFA α1", r.dfa_alpha1 != null ? r.dfa_alpha1.toFixed(2) : null, r.dfa_alpha1 != null ? alpha1Read(r.dfa_alpha1) : "necesita la banda HRM 600");
   return `<div class="ride-panel">
     <div class="ride-metrics">${grid}</div>
     <div class="rd-block"><div class="rd-title">Intensidad de la salida (tiempo en zonas de FC)</div>${renderZoneBar(r.zone_times)}</div>

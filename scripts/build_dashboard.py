@@ -14,6 +14,11 @@ import requests
 
 from evidencia import evidencia_para_plan, evidencia_agrupada
 from periodizacion import fase_actual, mapa_temporada
+try:
+    import dfa as dfa_mod
+except Exception as _e:  # numpy podría no estar
+    dfa_mod = None
+    print(f"AVISO: módulo DFA no disponible ({_e})")
 
 API = "https://intervals.icu/api/v1"
 ATHLETE = os.environ.get("ATHLETE_ID", "i650204")
@@ -251,6 +256,95 @@ def estimate_lthr(rides):
     }
 
 
+def rr_stream(aid, sample=False):
+    """Baja los intervalos RR (latido a latido, en ms) de una salida.
+
+    Con la banda HRM 600 el stream 'hrv' trae los RR. Devuelve (rr_ms, hr) o
+    (None, None) si la salida no tiene RR. `sample=True` imprime el formato del
+    stream (para verificar en el log del workflow)."""
+    try:
+        streams = get(f"/activity/{aid}/streams", types="time,heartrate,hrv")
+    except Exception as e:
+        print(f"DFA: no pude bajar streams RR de {aid}: {e}")
+        return None, None
+    if not isinstance(streams, list):
+        return None, None
+    rr = hr = None
+    for s in streams:
+        t = s.get("type")
+        if t in ("hrv", "rr", "rrIntervals"):
+            rr = s.get("data")
+        elif t == "heartrate":
+            hr = s.get("data")
+    if sample and rr:
+        head = [x for x in rr[:12]]
+        print(f"DFA muestra RR de {aid}: n={len(rr)} primeros={head} "
+              f"(unidad {'s' if head and max(x for x in head if x) < 5 else 'ms'})")
+    if not rr:
+        return None, None
+    # intervals.icu puede entregar RR en segundos o milisegundos: normalizo a ms
+    vals = [x for x in rr if isinstance(x, (int, float)) and x > 0]
+    if vals and (sum(vals) / len(vals)) < 5:  # media <5 → está en segundos
+        rr = [x * 1000 if isinstance(x, (int, float)) else x for x in rr]
+    return rr, hr
+
+
+def compute_dfa(rides, max_downloads=6):
+    """DFA a1 sobre las últimas salidas con RR (banda HRM 600).
+
+    - AeT (VT1) = FC donde a1≈0.75 (techo real de Z2), de la salida más reciente
+      que cruce el umbral; arma la tendencia con las demás.
+    - last_alpha1 = a1 del tramo fácil de la última salida (durabilidad/fatiga).
+    - Devuelve None si ninguna salida trae RR (banda no usada esa vez).
+    """
+    if dfa_mod is None or not rides:
+        return None
+    trend = []
+    last_alpha1 = None
+    last_interp = ""
+    aet_hr = vt2_hr = None
+    quality = "sin datos"
+    source_date = None
+    downloads = 0
+    for i, r in enumerate(rides):
+        if downloads >= max_downloads:
+            break
+        rr, hr = rr_stream(r.get("id"), sample=(downloads == 0))
+        if not rr:
+            continue
+        downloads += 1
+        res = dfa_mod.analizar(rr, hr)
+        # anota la salida (misma referencia que va en data["rides"]) con su α1
+        r["dfa_alpha1"] = res.get("last_alpha1")
+        if res.get("aet_hr"):
+            r["dfa_aet_hr"] = res.get("aet_hr")
+        if last_alpha1 is None and res.get("last_alpha1") is not None:
+            last_alpha1 = res["last_alpha1"]
+            last_interp = dfa_mod.interpretar(last_alpha1)
+        aet = res.get("aet_hr")
+        if aet:
+            trend.append({"date": r.get("date"), "aet": aet})
+            if aet_hr is None:  # la más reciente válida = AeT actual
+                aet_hr = aet
+                vt2_hr = res.get("vt2_hr")
+                quality = res.get("quality", "baja")
+                source_date = r.get("date")
+    if last_alpha1 is None and not aet_hr:
+        return None
+    trend = list(reversed(trend))  # cronológico para el sparkline
+    note = ("El valor más confiable sale del test de rampa suave con la banda puesta. "
+            "AeT = techo real de tu Z2 (α1≈0.75); α1 de la última salida mide durabilidad "
+            "(≥0.9 muy fresco · ~0.75 en umbral · <0.5 intenso).")
+    out = {
+        "aet_hr": aet_hr, "vt2_hr": vt2_hr,
+        "last_alpha1": last_alpha1, "interpretacion": last_interp,
+        "trend": trend, "quality": quality,
+        "source": source_date, "rides_with_rr": downloads, "note": note,
+    }
+    print(f"DFA: {json.dumps(out, ensure_ascii=False)}")
+    return out
+
+
 def suggest_route(plan, rides):
     """Recomienda una ruta propia ya hecha que encaje con el entreno de hoy.
 
@@ -429,6 +523,8 @@ def build(wellness, activities, athlete):
             "cadence": num(a.get("average_cadence")),
             "calories": num(a.get("calories")),
             "decoupling": num(a.get("decoupling")),
+            "respiration": num(a.get("average_respiration") or a.get("avg_respiration")
+                               or a.get("respiration")),
             "zone_times": (a.get("icu_hr_zone_times") or a.get("hr_zone_times")
                            or a.get("icu_zone_times") or None),
         })
@@ -600,15 +696,8 @@ def build(wellness, activities, athlete):
     }
     print(f"Subjetivo (RPE/Feel): {json.dumps(subjective, ensure_ascii=False)}")
 
-    # ---- sonda DFA a1: ¿el reloj graba intervalos latido a latido (RR)?
-    if rides:
-        try:
-            probe = get(f"/activity/{rides[0]['id']}/streams", types="hrv")
-            types = [s.get("type") for s in probe] if isinstance(probe, list) else []
-            has_rr = any(t in ("hrv", "rr", "rrIntervals") for t in types)
-            print(f"DFA a1 probe: tipos disponibles={types} | RR presente={has_rr}")
-        except Exception as e:
-            print(f"DFA a1 probe: sin datos RR ({e})")
+    # ---- DFA a1 (banda HRM 600): umbral aeróbico por variabilidad + durabilidad
+    dfa = compute_dfa(rides)
 
     # ---------- alertas
     alerts = []
@@ -660,6 +749,7 @@ def build(wellness, activities, athlete):
         "health": health,
         "overtraining": overtraining,
         "lthr": lthr_est,
+        "dfa": dfa,
         "quality": quality,
         "subjective": subjective,
         "alerts": alerts,

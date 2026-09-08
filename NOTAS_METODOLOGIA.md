@@ -154,4 +154,28 @@ Lectura de cardiología deportiva (para el entrenamiento):
 ## Sección Medidas (para compras online)
 - data/medidas.json + sección "Medidas" con dibujos de cómo medir (SVG) por prenda: ropa
   (pecho/cintura/cadera/entrepierna/brazo/bíceps), calzado (pie), guantes (mano largo/contorno),
-  casco (cabeza), + peso y altura. Autoservicio por issue "cargar-medidas" (add_medida.py).
+  casco (cabeza), + peso y altura.
+- **Edición in-app con localStorage** (`peloton-medidas`): Emanuel escribe cada valor en un input
+  y se guarda solo en el navegador (feedback "✓ guardado"), sin pasar por GitHub. El peso es de
+  solo lectura (viene de la balanza / Composición). El seed de data/medidas.json es el valor por
+  defecto; lo guardado a mano tiene prioridad. (add_medida.py queda como vía alternativa, no principal.)
+
+## Banda HRM 600 → DFA α1 + respiración (desde 09/2026)
+- Emanuel sumó una **Garmin HRM 600** (banda de pecho). Ahora las salidas graban el intervalo
+  **latido a latido (RR)**: el stream `hrv` de intervals.icu trae los RR (confirmado: `RR presente=True`).
+  El sensor de muñeca NO da RR fiable → para DFA hay que usar la banda.
+- **DFA α1 (Detrended Fluctuation Analysis, orden 1)** — scripts/dfa.py. Método Rogers et al. 2021:
+  se calcula α1 en ventanas cortas (120 s) sobre escalas de 4–16 latidos; a medida que sube la
+  intensidad α1 baja. **α1 ≈ 0.75 = umbral aeróbico (AeT/VT1) = techo real de la Z2**; **α1 ≈ 0.5 = VT2**.
+  Filtro de artefactos: RR fuera de 300–2000 ms o con salto >5% vs. el previo se descartan.
+  Normaliza a ms si el stream viene en segundos.
+- **En el build** (compute_dfa): calcula sobre las últimas ~6 salidas con RR; la más reciente que
+  cruce el umbral fija el AeT actual, el resto arma la tendencia (sparkline). El α1 del tramo fácil
+  de la última salida es marcador de **durabilidad/fatiga** (≥0.9 muy fresco · ~0.75 en umbral ·
+  <0.5 intenso). Expuesto en `data["dfa"]`; α1 por salida anotado en cada ride (detalle de salida).
+- **Test DFA α1 · rampa** (load_test.py `dfa_ramp`): rampa suave y pareja Z1→Z5 en escalones de 3 min,
+  con la banda, en rodillo/llano sin cortes → curva α1–FC limpia. Es el valor **más confiable** de AeT.
+- **Frecuencia respiratoria**: `average_respiration` por salida (la banda la mide) → marcador de
+  esfuerzo; se muestra en el detalle de cada salida.
+- Aviso al usuario: DFA es sensible; el número orientativo sale de cualquier salida con banda, pero
+  el confiable sale del test de rampa. numpy agregado al workflow (dashboard.yml).

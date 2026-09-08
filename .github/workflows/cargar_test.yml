@@ -15,6 +15,8 @@ on:
           - cooper_12
           - sit
           - hrr
+          - vt_step
+          - dfa_ramp
       fecha:
         description: "Fecha (YYYY-MM-DD). Vacío = mañana."
         type: string

@@ -339,6 +339,8 @@ details li { margin: 5px 0; }
 .rm-label { font-size: 0.68rem; color: var(--muted); white-space: normal; }
 .rm-value { font-family: var(--mono); font-weight: 700; font-size: 1.05rem; color: #fff; white-space: normal; }
 .rm-sub { font-size: 0.64rem; color: var(--faint); white-space: normal; }
+.dfa-trend { margin-top: 16px; }
+.dfa-spark { width: 100%; max-width: 320px; height: auto; display: block; margin: 6px 0 4px; }
 .rd-block { margin-top: 14px; }
 .rd-title { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); margin-bottom: 7px; }
 .zone-bar { display: flex; height: 26px; border-radius: 8px; overflow: hidden; border: 1px solid var(--line); background: var(--bg-2); }

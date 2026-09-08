@@ -67,6 +67,21 @@ TESTS = {
                  "Vuelta a la calma\n- 10m Z1 HR"),
         "tip": "Una caída de más de 25-30 lpm en el primer minuto es señal de buena forma.",
     },
+    "dfa_ramp": {
+        "name": "Test DFA a1 — rampa suave (umbral aeróbico con la banda HRM 600)",
+        "mide": ("Umbral aeróbico (VT1) por variabilidad de la FC (DFA α1). Con la banda de "
+                 "pecho puesta, la app calcula la FC donde α1≈0.75: ese es el techo REAL de tu "
+                 "Z2, sin lactato ni laboratorio (método Rogers 2021)."),
+        "text": ("Calentamiento\n- 10m Z1 HR\n\n"
+                 "Rampa progresiva y PAREJA — subí un escalón cada 3 min, sin picos ni frenadas\n"
+                 "- 3m Z1 HR\n- 3m Z2 HR\n- 3m Z2 HR\n- 3m Z3 HR\n- 3m Z3 HR\n"
+                 "- 3m Z4 HR\n- 3m Z4 HR\n- 3m Z5 HR\n\n"
+                 "Vuelta a la calma\n- 10m Z1 HR"),
+        "tip": ("CLAVE: usá la banda HRM 600 (no el sensor de muñeca) y hacelo en rodillo o "
+                "terreno llano SIN cortes, para que los intervalos latido a latido salgan limpios. "
+                "Subí la intensidad de a poco y sostené cada escalón parejo: la app arma la curva "
+                "α1–FC y marca tu umbral aeróbico. Es el valor más confiable de AeT."),
+    },
     "vt_step": {
         "name": "Test de umbrales VT1/VT2 (escalonado + prueba del habla)",
         "mide": ("Ubica tus DOS umbrales: VT1 (aeróbico, donde la respiración se agita por "
