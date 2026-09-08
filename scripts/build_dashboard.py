@@ -269,23 +269,33 @@ def rr_stream(aid, sample=False):
         return None, None
     if not isinstance(streams, list):
         return None, None
-    rr = hr = None
+    raw = hr = None
     for s in streams:
         t = s.get("type")
         if t in ("hrv", "rr", "rrIntervals"):
-            rr = s.get("data")
+            raw = s.get("data")
         elif t == "heartrate":
             hr = s.get("data")
-    if sample and rr:
-        head = [x for x in rr[:12]]
-        print(f"DFA muestra RR de {aid}: n={len(rr)} primeros={head} "
-              f"(unidad {'s' if head and max(x for x in head if x) < 5 else 'ms'})")
+    if sample and raw:
+        print(f"DFA muestra RR de {aid}: n={len(raw)} primeros={raw[:8]!r}")
+    if not raw:
+        return None, None
+    # el stream 'hrv' de Garmin/intervals suele venir anidado (cada registro trae
+    # una lista de RR) o plano; aplano a una lista de números.
+    rr = []
+    for x in raw:
+        if isinstance(x, (list, tuple)):
+            rr.extend(v for v in x if isinstance(v, (int, float)))
+        elif isinstance(x, (int, float)):
+            rr.append(x)
+    rr = [v for v in rr if v and v > 0]
     if not rr:
         return None, None
     # intervals.icu puede entregar RR en segundos o milisegundos: normalizo a ms
-    vals = [x for x in rr if isinstance(x, (int, float)) and x > 0]
-    if vals and (sum(vals) / len(vals)) < 5:  # media <5 → está en segundos
-        rr = [x * 1000 if isinstance(x, (int, float)) else x for x in rr]
+    if (sum(rr) / len(rr)) < 5:  # media <5 → está en segundos
+        rr = [v * 1000 for v in rr]
+    if sample:
+        print(f"DFA RR aplanado de {aid}: n={len(rr)} media={sum(rr)/len(rr):.0f} ms")
     return rr, hr
 
 
@@ -697,7 +707,13 @@ def build(wellness, activities, athlete):
     print(f"Subjetivo (RPE/Feel): {json.dumps(subjective, ensure_ascii=False)}")
 
     # ---- DFA a1 (banda HRM 600): umbral aeróbico por variabilidad + durabilidad
-    dfa = compute_dfa(rides)
+    try:
+        dfa = compute_dfa(rides)
+    except Exception as e:
+        import traceback
+        print(f"AVISO: DFA falló, sigo sin ese dato ({e})")
+        traceback.print_exc()
+        dfa = None
 
     # ---------- alertas
     alerts = []
